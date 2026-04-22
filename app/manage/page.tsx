@@ -11,13 +11,14 @@ import Link from 'next/link';
 export default function ManagePage() {
     const [formName, setFormName] = useState('');
     const [formCategory, setFormCategory] = useState('KOPI CLASSIC');
+    const [formVariant, setFormVariant] = useState(''); // STATE BARU: VARIAN
     const [formPrice, setFormPrice] = useState('');
     const [formStock, setFormStock] = useState('50');
     const [isDark, setIsDark] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     const [editId, setEditId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState({ name: '', category: '', price: '' });
+    const [editForm, setEditForm] = useState({ name: '', category: '', price: '', variant: '' }); // TAMBAH VARIAN DI EDIT
 
     const manageProductsList = useLiveQuery(async () => {
         const all = await db.products.toArray();
@@ -26,22 +27,46 @@ export default function ManagePage() {
 
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formName || !formPrice || !formStock) return alert('Isi Nama, Harga, dan Stok!');
+
+        // Logika Harga: Kalau Manual Brew, paksa harga jadi 0
+        const finalPrice = formVariant === 'Manual Brew' ? 0 : parseInt(formPrice);
+
+        if (!formName || (formVariant !== 'Manual Brew' && !formPrice) || !formStock) return alert('Isi Nama, Harga, dan Stok!');
+
         await db.products.add({
-            name: formName, category: formCategory, price: parseInt(formPrice), stock: parseInt(formStock), isActive: true, variant: ''
+            name: formName,
+            category: formCategory,
+            price: finalPrice,
+            stock: parseInt(formStock),
+            isActive: true,
+            variant: formVariant // Simpan Varian
         });
-        setFormName(''); setFormPrice(''); setFormStock('50');
+
+        setFormName(''); setFormPrice(''); setFormStock('50'); setFormVariant('');
         setIsFormOpen(false);
     };
 
     const startEdit = (product: Product) => {
         setEditId(product.id!);
-        setEditForm({ name: product.name, category: product.category, price: product.price.toString() });
+        setEditForm({
+            name: product.name,
+            category: product.category,
+            price: product.price.toString(),
+            variant: product.variant || ''
+        });
     };
 
     const saveEdit = async () => {
-        if (!editForm.name || !editForm.price) return alert('Isi lengkap!');
-        await db.products.update(editId!, { name: editForm.name, category: editForm.category, price: parseInt(editForm.price) });
+        const finalEditPrice = editForm.variant === 'Manual Brew' ? 0 : parseInt(editForm.price);
+
+        if (!editForm.name || (editForm.variant !== 'Manual Brew' && !editForm.price)) return alert('Isi lengkap!');
+
+        await db.products.update(editId!, {
+            name: editForm.name,
+            category: editForm.category,
+            price: finalEditPrice,
+            variant: editForm.variant
+        });
         setEditId(null);
     };
 
@@ -131,11 +156,25 @@ export default function ManagePage() {
                                     <option value="MAKANAN">Makanan / Cookies</option>
                                 </select>
                             </div>
-                            <div className="min-w-[100px]">
-                                <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga (Rp)</label>
-                                <input type="number" value={formPrice} onChange={e => setFormPrice(e.target.value)} placeholder="15000"
-                                    className={`w-full p-2.5 rounded-xl font-bold text-xs outline-none border ${d ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-600 focus:border-amber-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-amber-500'}`} />
+                            {/* DROPDOWN VARIAN */}
+                            <div className="min-w-[120px]">
+                                <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Varian</label>
+                                <select value={formVariant} onChange={e => setFormVariant(e.target.value)}
+                                    className={`w-full p-2.5 rounded-xl font-bold text-xs outline-none border ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-white border-zinc-200 text-zinc-900 focus:border-amber-500'}`}>
+                                    <option value="">Tanpa Varian</option>
+                                    <option value="Hot">Hot</option>
+                                    <option value="Iced">Iced</option>
+                                    <option value="Manual Brew">Manual Brew</option>
+                                </select>
                             </div>
+                            {/* INPUT HARGA (HILANG JIKA MANUAL BREW) */}
+                            {formVariant !== 'Manual Brew' && (
+                                <div className="min-w-[100px]">
+                                    <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga (Rp)</label>
+                                    <input type="number" value={formPrice} onChange={e => setFormPrice(e.target.value)} placeholder="15000"
+                                        className={`w-full p-2.5 rounded-xl font-bold text-xs outline-none border ${d ? 'bg-zinc-800 border-zinc-700 text-white placeholder-zinc-600 focus:border-amber-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder-zinc-400 focus:border-amber-500'}`} />
+                                </div>
+                            )}
                             <div className="min-w-[80px]">
                                 <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Stok</label>
                                 <input type="number" value={formStock} onChange={e => setFormStock(e.target.value)}
@@ -166,9 +205,19 @@ export default function ManagePage() {
 
                                     {editId === p.id ? (
                                         <>
+                                            {/* EDIT FORM DALAM TABLE */}
                                             <td className="px-5 md:px-8 py-3">
-                                                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                                                    className={`w-full p-2 rounded-lg border font-bold text-xs outline-none ${d ? 'bg-zinc-800 border-zinc-600 text-white focus:border-amber-500' : 'bg-white border-zinc-300 text-zinc-900 focus:border-amber-500'}`} />
+                                                <div className="flex flex-col gap-2">
+                                                    <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                                        className={`w-full p-2 rounded-lg border font-bold text-xs outline-none ${d ? 'bg-zinc-800 border-zinc-600 text-white focus:border-amber-500' : 'bg-white border-zinc-300 text-zinc-900 focus:border-amber-500'}`} />
+                                                    <select value={editForm.variant} onChange={e => setEditForm({ ...editForm, variant: e.target.value })}
+                                                        className={`w-full p-2 rounded-lg border font-bold text-xs outline-none ${d ? 'bg-zinc-800 border-zinc-600 text-white focus:border-amber-500' : 'bg-white border-zinc-300 text-zinc-900 focus:border-amber-500'}`}>
+                                                        <option value="">Tanpa Varian</option>
+                                                        <option value="Hot">Hot</option>
+                                                        <option value="Iced">Iced</option>
+                                                        <option value="Manual Brew">Manual Brew</option>
+                                                    </select>
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 hidden sm:table-cell">
                                                 <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
@@ -180,8 +229,12 @@ export default function ManagePage() {
                                                 </select>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                                                    className={`w-24 p-2 rounded-lg border font-bold text-xs outline-none ${d ? 'bg-zinc-800 border-zinc-600 text-white focus:border-amber-500' : 'bg-white border-zinc-300 text-zinc-900 focus:border-amber-500'}`} />
+                                                {editForm.variant !== 'Manual Brew' ? (
+                                                    <input type="number" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                                                        className={`w-24 p-2 rounded-lg border font-bold text-xs outline-none ${d ? 'bg-zinc-800 border-zinc-600 text-white focus:border-amber-500' : 'bg-white border-zinc-300 text-zinc-900 focus:border-amber-500'}`} />
+                                                ) : (
+                                                    <span className={`text-[10px] font-black uppercase ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga di Kasir</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-3" />
                                             <td className="px-4 py-3 text-right">
@@ -209,7 +262,7 @@ export default function ManagePage() {
                                             </td>
                                             <td className="px-4 py-3.5">
                                                 <span className={`text-xs font-black ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                                                    Rp {p.price.toLocaleString('id-ID')}
+                                                    {p.price === 0 ? 'Custom di Kasir' : `Rp ${p.price.toLocaleString('id-ID')}`}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3.5">

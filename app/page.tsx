@@ -5,8 +5,10 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Product } from '../lib/db';
-import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon } from 'lucide-react';
+import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText } from 'lucide-react';
 import Link from 'next/link';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function POSPage() {
   const [cart, setCart] = useState<any[]>([]);
@@ -17,6 +19,8 @@ export default function POSPage() {
   const [manualName, setManualName] = useState('Manual Brew');
   const [manualPrice, setManualPrice] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
   const activeProducts = useLiveQuery(async () => {
     const all = await db.products.toArray();
@@ -67,8 +71,7 @@ export default function POSPage() {
     setIsManualModalOpen(false);
   };
 
-  const handleCheckout = async () => {
-    if (cart.length === 0) return;
+  const processPayment = async () => {
     const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
 
     for (const item of cart) {
@@ -85,9 +88,89 @@ export default function POSPage() {
 
     alert(`Pembayaran ${paymentMethod} Berhasil!`);
     setCart([]);
+    setIsCheckoutModalOpen(false);
+  };
+
+  const cancelOrder = () => {
+    setCart([]);
+    setIsCheckoutModalOpen(false);
+  };
+
+  // FUNGSI REKAP TUTUP KASIR (CETAK PDF)
+  const handleTutupKasir = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Ambil data khusus hari ini
+    const todaysSales = await db.sales
+      .where('date')
+      .between(today, tomorrow)
+      .toArray();
+
+    if (todaysSales.length === 0) {
+      return alert('Belum ada transaksi hari ini, nggak bisa tutup kasir!');
+    }
+
+    let totalCash = 0;
+    let totalQris = 0;
+    let grandTotal = 0;
+
+    const tableData = todaysSales.map((sale, index) => {
+      if (sale.paymentMethod === 'CASH') totalCash += sale.totalAmount;
+      if (sale.paymentMethod === 'QRIS') totalQris += sale.totalAmount;
+      grandTotal += sale.totalAmount;
+
+      const itemsStr = sale.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+
+      return [
+        index + 1,
+        sale.date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        itemsStr,
+        sale.paymentMethod,
+        `Rp ${sale.totalAmount.toLocaleString('id-ID')}`
+      ];
+    });
+
+    const doc = new jsPDF();
+    const dateStr = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    doc.setFontSize(16);
+    doc.text('REKAP TUTUP KASIR JUHBAY COFFEE', 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Tanggal: ${dateStr}`, 14, 28);
+
+    // Tabel Ringkasan
+    autoTable(doc, {
+      startY: 35,
+      head: [['Total Transaksi', 'Total CASH', 'Total QRIS', 'GRAND TOTAL']],
+      body: [[
+        todaysSales.length.toString(),
+        `Rp ${totalCash.toLocaleString('id-ID')}`,
+        `Rp ${totalQris.toLocaleString('id-ID')}`,
+        `Rp ${grandTotal.toLocaleString('id-ID')}`
+      ]],
+      theme: 'grid',
+      headStyles: { fillColor: [245, 158, 11] } // Warna Amber-500
+    });
+
+    // Tabel Detail Penjualan
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [['No', 'Jam', 'Orderan', 'Pembayaran', 'Total']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [39, 39, 42] }, // Warna Zinc-800
+      styles: { fontSize: 9 }
+    });
+
+    doc.save(`Rekap_Juhbay_${today.toISOString().split('T')[0]}.pdf`);
+    alert('Tutup Kasir selesai! File PDF berhasil didownload. Data tetap aman di History.');
   };
 
   const d = isDark;
+  const cartTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
 
   return (
     <div className={`flex h-screen font-sans overflow-hidden relative transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
@@ -120,6 +203,38 @@ export default function POSPage() {
         </div>
       )}
 
+      {/* MODAL CHECKOUT CONFIRMATION */}
+      {isCheckoutModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-base font-black uppercase tracking-widest text-amber-500">Konfirmasi</h3>
+              <button onClick={() => setIsCheckoutModalOpen(false)} className={`p-2 rounded-lg transition-colors ${d ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}><X size={18} /></button>
+            </div>
+
+            <div className="text-center mb-8">
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Tagihan</p>
+              <p className="text-4xl font-black tracking-tighter">Rp {cartTotal.toLocaleString('id-ID')}</p>
+              <div className={`inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${paymentMethod === 'QRIS' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-green-500/10 text-green-600 border-green-500/20'}`}>
+                Via {paymentMethod}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button onClick={processPayment} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-sm">
+                Udah Bayar
+              </button>
+              <button onClick={() => setIsCheckoutModalOpen(false)} className={`w-full border-2 font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs ${d ? 'border-zinc-700 hover:bg-zinc-800 text-white' : 'border-zinc-200 hover:bg-zinc-50 text-zinc-900'}`}>
+                Belum (Kembali)
+              </button>
+              <button onClick={cancelOrder} className={`w-full font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs text-red-500 ${d ? 'hover:bg-red-500/10' : 'hover:bg-red-50'}`}>
+                Cancel Orderan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SIDEBAR */}
       <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 transition-colors duration-300 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
         <div className="px-2 py-4 mb-2 hidden md:block">
@@ -140,7 +255,15 @@ export default function POSPage() {
           <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
         </Link>
 
-        <div className="mt-auto">
+        {/* TOMBOL TUTUP KASIR */}
+        <div className="mt-auto mb-2">
+          <button onClick={handleTutupKasir} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-black text-xs transition-all ${d ? 'bg-zinc-800 text-amber-500 hover:bg-amber-500 hover:text-black' : 'bg-zinc-100 text-amber-600 hover:bg-amber-500 hover:text-white'}`}>
+            <FileText size={17} />
+            <span className="hidden md:block">Tutup Kasir</span>
+          </button>
+        </div>
+
+        <div className="mt-1">
           <button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
             {d ? <Sun size={17} /> : <Moon size={17} />}
             <span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span>
@@ -237,10 +360,10 @@ export default function POSPage() {
             <div className="flex justify-between items-end">
               <span className={`text-[9px] font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Total</span>
               <span className="text-xl font-black tracking-tighter">
-                Rp {cart.reduce((s, i) => s + (i.price * i.quantity), 0).toLocaleString('id-ID')}
+                Rp {cartTotal.toLocaleString('id-ID')}
               </span>
             </div>
-            <button onClick={handleCheckout} disabled={cart.length === 0}
+            <button onClick={() => setIsCheckoutModalOpen(true)} disabled={cart.length === 0}
               className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs">
               Bayar Sekarang
             </button>
