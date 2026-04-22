@@ -178,7 +178,8 @@ export default function DashboardPage() {
                                                 fontWeight: 'bold',
                                                 fontSize: '12px'
                                             }}
-                                            formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`] as any}
+                                            // @ts-ignore
+                                            formatter={(value) => [`Rp ${Number(value).toLocaleString('id-ID')}`]}
                                         />
                                         <Legend
                                             wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 900 }}
