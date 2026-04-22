@@ -94,8 +94,6 @@ export default function HistoryPage() {
                 <Link href="/" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <Store size={17} /> <span className="hidden md:block tracking-wide">Kasir</span>
                 </Link>
-
-
                 <Link href="/history" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black text-xs transition-all">
                     <HistoryIcon size={17} /> <span className="hidden md:block tracking-wide">Riwayat</span>
                 </Link>
