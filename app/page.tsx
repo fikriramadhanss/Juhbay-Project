@@ -1,18 +1,19 @@
-//ini page tsx di app
+// app/page.tsx
 
 'use client';
 
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Product } from '../lib/db';
-import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText } from 'lucide-react';
+import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText, BarChart3, BookOpen, CheckCircle, SplitSquareHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function POSPage() {
   const [cart, setCart] = useState<any[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QRIS'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QRIS' | 'SPLIT'>('CASH');
+  const [splitCash, setSplitCash] = useState('');
   const [isDark, setIsDark] = useState(true);
 
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -21,6 +22,7 @@ export default function POSPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [customerName, setCustomerName] = useState('');
 
   const activeProducts = useLiveQuery(async () => {
     const all = await db.products.toArray();
@@ -71,8 +73,25 @@ export default function POSPage() {
     setIsManualModalOpen(false);
   };
 
-  const processPayment = async () => {
-    const total = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+  const cartTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+
+  const processPayment = async (isKasbon: boolean) => {
+    if (isKasbon && !customerName.trim()) {
+      return alert('Nama temen/pelanggan harus diisi kalau mau ngutang!');
+    }
+
+    const cAmount = paymentMethod === 'SPLIT' ? parseInt(splitCash || '0') : (paymentMethod === 'CASH' ? cartTotal : 0);
+    const qAmount = paymentMethod === 'SPLIT' ? (cartTotal - cAmount) : (paymentMethod === 'QRIS' ? cartTotal : 0);
+
+    if (paymentMethod === 'SPLIT' && (cAmount < 0 || cAmount > cartTotal)) {
+      return alert('Nominal Cash untuk Split tidak valid!');
+    }
+
+    if (!isKasbon && (paymentMethod === 'QRIS' || paymentMethod === 'SPLIT')) {
+      if (!window.confirm(`PENTING: Pastiin saldo QRIS sebesar Rp ${qAmount.toLocaleString('id-ID')} udah masuk mutasi ya. Udah dicek?`)) {
+        return;
+      }
+    }
 
     for (const item of cart) {
       const p = await db.products.get(item.productId);
@@ -81,54 +100,70 @@ export default function POSPage() {
 
     await db.sales.add({
       date: new Date(),
-      totalAmount: total,
+      totalAmount: cartTotal,
       paymentMethod: paymentMethod,
+      status: isKasbon ? 'UNPAID' : 'PAID',
+      customerName: customerName || '-',
+      cashAmount: cAmount,
+      qrisAmount: qAmount,
       items: cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity }))
     });
 
-    alert(`Pembayaran ${paymentMethod} Berhasil!`);
+    if (isKasbon) {
+      alert(`Pesanan a/n ${customerName} masuk ke Buku Hutang (Rencana Via ${paymentMethod})!`);
+    } else {
+      alert(`Pembayaran ${paymentMethod} Berhasil!`);
+    }
+
     setCart([]);
+    setCustomerName('');
+    setSplitCash('');
     setIsCheckoutModalOpen(false);
   };
 
   const cancelOrder = () => {
     setCart([]);
+    setCustomerName('');
+    setSplitCash('');
     setIsCheckoutModalOpen(false);
   };
 
-  // FUNGSI REKAP TUTUP KASIR (CETAK PDF)
   const handleTutupKasir = async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Ambil data khusus hari ini
     const todaysSales = await db.sales
       .where('date')
       .between(today, tomorrow)
       .toArray();
 
-    if (todaysSales.length === 0) {
-      return alert('Belum ada transaksi hari ini, nggak bisa tutup kasir!');
+    const validSales = todaysSales.filter(s => s.status !== 'UNPAID');
+
+    if (validSales.length === 0) {
+      return alert('Belum ada transaksi lunas hari ini, nggak bisa tutup kasir!');
     }
 
     let totalCash = 0;
     let totalQris = 0;
     let grandTotal = 0;
 
-    const tableData = todaysSales.map((sale, index) => {
-      if (sale.paymentMethod === 'CASH') totalCash += sale.totalAmount;
-      if (sale.paymentMethod === 'QRIS') totalQris += sale.totalAmount;
+    const tableData = validSales.map((sale, index) => {
+      totalCash += sale.cashAmount || (sale.paymentMethod === 'CASH' ? sale.totalAmount : 0);
+      totalQris += sale.qrisAmount || (sale.paymentMethod === 'QRIS' ? sale.totalAmount : 0);
       grandTotal += sale.totalAmount;
 
       const itemsStr = sale.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+      const methodStr = sale.paymentMethod === 'SPLIT'
+        ? `SPLIT (C: ${sale.cashAmount}, Q: ${sale.qrisAmount})`
+        : sale.paymentMethod;
 
       return [
         index + 1,
         sale.date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
         itemsStr,
-        sale.paymentMethod,
+        methodStr,
         `Rp ${sale.totalAmount.toLocaleString('id-ID')}`
       ];
     });
@@ -141,36 +176,33 @@ export default function POSPage() {
     doc.setFontSize(11);
     doc.text(`Tanggal: ${dateStr}`, 14, 28);
 
-    // Tabel Ringkasan
     autoTable(doc, {
       startY: 35,
-      head: [['Total Transaksi', 'Total CASH', 'Total QRIS', 'GRAND TOTAL']],
+      head: [['Total Transaksi Lunas', 'Total CASH Masuk', 'Total QRIS Masuk', 'GRAND TOTAL']],
       body: [[
-        todaysSales.length.toString(),
+        validSales.length.toString(),
         `Rp ${totalCash.toLocaleString('id-ID')}`,
         `Rp ${totalQris.toLocaleString('id-ID')}`,
         `Rp ${grandTotal.toLocaleString('id-ID')}`
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [245, 158, 11] } // Warna Amber-500
+      headStyles: { fillColor: [245, 158, 11] }
     });
 
-    // Tabel Detail Penjualan
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 10,
       head: [['No', 'Jam', 'Orderan', 'Pembayaran', 'Total']],
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [39, 39, 42] }, // Warna Zinc-800
-      styles: { fontSize: 9 }
+      headStyles: { fillColor: [39, 39, 42] },
+      styles: { fontSize: 8 }
     });
 
     doc.save(`Rekap_Juhbay_${today.toISOString().split('T')[0]}.pdf`);
-    alert('Tutup Kasir selesai! File PDF berhasil didownload. Data tetap aman di History.');
+    alert('Tutup Kasir selesai! (Kasbon tidak masuk di rekap ini).');
   };
 
   const d = isDark;
-  const cartTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
 
   return (
     <div className={`flex h-screen font-sans overflow-hidden relative transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
@@ -212,23 +244,27 @@ export default function POSPage() {
               <button onClick={() => setIsCheckoutModalOpen(false)} className={`p-2 rounded-lg transition-colors ${d ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}><X size={18} /></button>
             </div>
 
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Tagihan</p>
               <p className="text-4xl font-black tracking-tighter">Rp {cartTotal.toLocaleString('id-ID')}</p>
-              <div className={`inline-block mt-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${paymentMethod === 'QRIS' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-green-500/10 text-green-600 border-green-500/20'}`}>
-                Via {paymentMethod}
-              </div>
+            </div>
+
+            <div className="mb-6 text-left">
+              <label className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nama Pelanggan / Temen</label>
+              <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)}
+                className={`w-full p-3 rounded-xl font-bold outline-none border text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
+                placeholder="Cth: Yudha / Hanif" />
             </div>
 
             <div className="space-y-3">
-              <button onClick={processPayment} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-sm">
-                Udah Bayar
+              <button onClick={() => processPayment(false)} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                <CheckCircle size={16} /> Udah Bayar Lunas
               </button>
-              <button onClick={() => setIsCheckoutModalOpen(false)} className={`w-full border-2 font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs ${d ? 'border-zinc-700 hover:bg-zinc-800 text-white' : 'border-zinc-200 hover:bg-zinc-50 text-zinc-900'}`}>
-                Belum (Kembali)
+              <button onClick={() => processPayment(true)} className={`w-full border-2 font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs border-red-500/50 text-red-500 hover:bg-red-500/10`}>
+                Belum Bayar (Ngutang)
               </button>
-              <button onClick={cancelOrder} className={`w-full font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs text-red-500 ${d ? 'hover:bg-red-500/10' : 'hover:bg-red-50'}`}>
-                Cancel Orderan
+              <button onClick={cancelOrder} className={`w-full font-black py-2 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs ${d ? 'text-zinc-500 hover:bg-zinc-800' : 'text-zinc-400 hover:bg-zinc-100'}`}>
+                Kembali (Batal)
               </button>
             </div>
           </div>
@@ -253,6 +289,12 @@ export default function POSPage() {
         </Link>
         <Link href="/manage" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
           <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
+        </Link>
+        <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+          <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
+        </Link>
+        <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+          <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
         </Link>
 
         {/* TOMBOL TUTUP KASIR */}
@@ -312,7 +354,7 @@ export default function POSPage() {
               <ShoppingCart size={16} className="text-amber-500" />
               Keranjang
               {cart.length > 0 && (
-                <span className="bg-amber-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">{cart.length}</span>
+                <span className="bg-amber-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center ml-1">{cart.length}</span>
               )}
             </h2>
             <button onClick={() => setCart([])} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
@@ -343,7 +385,7 @@ export default function POSPage() {
 
           <div className={`p-3 md:p-5 border-t space-y-3 flex-shrink-0 ${d ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-100 bg-zinc-50'}`}>
             <div>
-              <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Metode Bayar</p>
+              <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Metode Bayar (Jika Lunas)</p>
               <div className="flex gap-2">
                 <button onClick={() => setPaymentMethod('CASH')}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-[10px] transition-all tracking-wider
@@ -355,9 +397,27 @@ export default function POSPage() {
                     ${paymentMethod === 'QRIS' ? 'bg-blue-600 text-white' : d ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-200 text-zinc-400'}`}>
                   <QrCode size={13} /> QRIS
                 </button>
+                <button onClick={() => setPaymentMethod('SPLIT')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-[10px] transition-all tracking-wider
+                    ${paymentMethod === 'SPLIT' ? 'bg-purple-500 text-white' : d ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-200 text-zinc-400'}`}>
+                  <SplitSquareHorizontal size={13} /> SPLIT
+                </button>
               </div>
             </div>
-            <div className="flex justify-between items-end">
+
+            {/* INPUT NOMINAL JIKA SPLIT */}
+            {paymentMethod === 'SPLIT' && (
+              <div className={`p-3 rounded-xl border ${d ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
+                <label className={`text-[9px] font-black uppercase tracking-widest block mb-1 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nominal Cash (Sisanya QRIS)</label>
+                <input type="number" value={splitCash} onChange={e => setSplitCash(e.target.value)}
+                  className={`w-full p-2 rounded-lg font-bold outline-none border text-xs mb-2 ${d ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} placeholder="Masukkan uang cash..." />
+                <p className={`text-[9px] font-bold ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  Sisa via QRIS: <span className="text-purple-500">Rp {(cartTotal - (parseInt(splitCash) || 0)).toLocaleString('id-ID')}</span>
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-between items-end mb-1">
               <span className={`text-[9px] font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Total</span>
               <span className="text-xl font-black tracking-tighter">
                 Rp {cartTotal.toLocaleString('id-ID')}

@@ -5,20 +5,20 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Product } from '../../lib/db';
-import { History, Settings, Store, PackagePlus, Minus, Plus, Edit, Trash2, Save, X, Coffee, Sun, Moon, Check } from 'lucide-react';
+import { History, Settings, Store, PackagePlus, Minus, Plus, Edit, Trash2, Save, X, Coffee, Sun, Moon, Check, BarChart3, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ManagePage() {
     const [formName, setFormName] = useState('');
     const [formCategory, setFormCategory] = useState('KOPI CLASSIC');
-    const [formVariant, setFormVariant] = useState(''); // STATE BARU: VARIAN
+    const [formVariant, setFormVariant] = useState('');
     const [formPrice, setFormPrice] = useState('');
     const [formStock, setFormStock] = useState('50');
     const [isDark, setIsDark] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     const [editId, setEditId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState({ name: '', category: '', price: '', variant: '' }); // TAMBAH VARIAN DI EDIT
+    const [editForm, setEditForm] = useState({ name: '', category: '', price: '', variant: '' });
 
     const manageProductsList = useLiveQuery(async () => {
         const all = await db.products.toArray();
@@ -28,7 +28,6 @@ export default function ManagePage() {
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Logika Harga: Kalau Manual Brew, paksa harga jadi 0
         const finalPrice = formVariant === 'Manual Brew' ? 0 : parseInt(formPrice);
 
         if (!formName || (formVariant !== 'Manual Brew' && !formPrice) || !formStock) return alert('Isi Nama, Harga, dan Stok!');
@@ -39,7 +38,7 @@ export default function ManagePage() {
             price: finalPrice,
             stock: parseInt(formStock),
             isActive: true,
-            variant: formVariant // Simpan Varian
+            variant: formVariant
         });
 
         setFormName(''); setFormPrice(''); setFormStock('50'); setFormVariant('');
@@ -106,6 +105,12 @@ export default function ManagePage() {
                 <Link href="/manage" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black text-xs transition-all">
                     <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
                 </Link>
+                <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
+                </Link>
+                <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
+                </Link>
 
                 <div className="mt-auto">
                     <button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
@@ -167,7 +172,6 @@ export default function ManagePage() {
                                     <option value="Manual Brew">Manual Brew</option>
                                 </select>
                             </div>
-                            {/* INPUT HARGA (HILANG JIKA MANUAL BREW) */}
                             {formVariant !== 'Manual Brew' && (
                                 <div className="min-w-[100px]">
                                     <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga (Rp)</label>
@@ -273,10 +277,10 @@ export default function ManagePage() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3.5 text-right">
-                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => startEdit(p)} className={`p-2 rounded-lg transition-all ${d ? 'text-zinc-500 hover:text-blue-400 hover:bg-zinc-800' : 'text-zinc-400 hover:text-blue-500 hover:bg-blue-50'}`}><Edit size={13} /></button>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <button onClick={() => startEdit(p)} className={`p-2 rounded-lg transition-all ${d ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20' : 'text-blue-500 bg-blue-50 hover:bg-blue-100'}`}><Edit size={13} /></button>
                                                     <button onClick={async () => { if (confirm('Hapus menu ini?')) await db.products.update(p.id!, { isActive: false }); }}
-                                                        className={`p-2 rounded-lg transition-all ${d ? 'text-zinc-500 hover:text-red-400 hover:bg-zinc-800' : 'text-zinc-400 hover:text-red-500 hover:bg-red-50'}`}><Trash2 size={13} /></button>
+                                                        className={`p-2 rounded-lg transition-all ${d ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-red-500 bg-red-50 hover:bg-red-100'}`}><Trash2 size={13} /></button>
                                                 </div>
                                             </td>
                                         </>
