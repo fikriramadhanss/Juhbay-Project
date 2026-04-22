@@ -1,4 +1,4 @@
-// ini manage
+// app/manage/page.tsx
 
 'use client';
 
@@ -86,7 +86,7 @@ export default function ManagePage() {
     return (
         <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
-            {/* SIDEBAR */}
+            {/* SIDEBAR NAVIGATION (URUTAN SUDAH BENAR) */}
             <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <div className="px-2 py-4 mb-2 hidden md:block">
                     <p className="text-[9px] font-black text-amber-500 tracking-[0.3em] uppercase mb-1">EST. 2024</p>
@@ -123,7 +123,6 @@ export default function ManagePage() {
             {/* MAIN CONTENT */}
             <div className="flex-1 overflow-hidden flex flex-col min-w-0">
 
-                {/* TOP BAR */}
                 <div className={`flex items-center justify-between px-5 md:px-8 py-4 border-b flex-shrink-0 ${d ? 'border-zinc-800 bg-zinc-900' : 'border-zinc-200 bg-white'}`}>
                     <div>
                         <h2 className="text-base font-black tracking-tight">Kelola Menu</h2>
@@ -142,7 +141,6 @@ export default function ManagePage() {
                     </button>
                 </div>
 
-                {/* FORM TAMBAH */}
                 {isFormOpen && (
                     <div className={`flex-shrink-0 border-b px-5 md:px-8 py-5 ${d ? 'bg-zinc-900/50 border-zinc-800' : 'bg-zinc-50 border-zinc-200'}`}>
                         <form onSubmit={handleAddProduct} className="flex flex-wrap gap-3 items-end">
@@ -161,7 +159,6 @@ export default function ManagePage() {
                                     <option value="MAKANAN">Makanan / Cookies</option>
                                 </select>
                             </div>
-                            {/* DROPDOWN VARIAN */}
                             <div className="min-w-[120px]">
                                 <label className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Varian</label>
                                 <select value={formVariant} onChange={e => setFormVariant(e.target.value)}
@@ -191,7 +188,6 @@ export default function ManagePage() {
                     </div>
                 )}
 
-                {/* TABLE */}
                 <div className="flex-1 overflow-y-auto overflow-x-auto">
                     <table className="w-full text-left min-w-[480px]">
                         <thead className={`sticky top-0 z-10 border-b ${d ? 'bg-zinc-950 border-zinc-800' : 'bg-zinc-100 border-zinc-200'}`}>
@@ -209,7 +205,6 @@ export default function ManagePage() {
 
                                     {editId === p.id ? (
                                         <>
-                                            {/* EDIT FORM DALAM TABLE */}
                                             <td className="px-5 md:px-8 py-3">
                                                 <div className="flex flex-col gap-2">
                                                     <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}

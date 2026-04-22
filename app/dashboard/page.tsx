@@ -14,7 +14,6 @@ export default function DashboardPage() {
 
     const dashboardData = useLiveQuery(async () => {
         const allSales = await db.sales.toArray();
-
         const sales = allSales.filter(s => s.status !== 'UNPAID');
 
         let totalRevenue = 0;
@@ -53,7 +52,7 @@ export default function DashboardPage() {
     return (
         <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
-            {/* SIDEBAR */}
+            {/* SIDEBAR NAVIGATION (URUTAN SUDAH BENAR) */}
             <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <div className="px-2 py-4 mb-2 hidden md:block">
                     <p className="text-[9px] font-black text-amber-500 tracking-[0.3em] uppercase mb-1">EST. 2024</p>
@@ -88,103 +87,71 @@ export default function DashboardPage() {
             </div>
 
             {/* MAIN CONTENT */}
-            <div className="flex-1 overflow-y-auto p-5 md:p-8">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-6xl mx-auto">
-
-                    <div className="mb-8">
-                        <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-1">Dashboard</h2>
-                        <p className={`text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                    <div className="mb-6 md:mb-8">
+                        <h2 className="text-xl md:text-3xl font-black tracking-tight mb-1">Dashboard</h2>
+                        <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
                             Ringkasan Performa Kedai
                         </p>
                     </div>
 
-                    {/* KOTAK RINGKASAN */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                        <div className={`p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Pendapatan</p>
-                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500"><TrendingUp size={16} /></div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+                        <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex justify-between items-start mb-2 md:mb-4">
+                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Pendapatan</p>
+                                <div className="p-1.5 md:p-2 rounded-lg bg-amber-500/10 text-amber-500"><TrendingUp size={14} className="md:w-4 md:h-4" /></div>
                             </div>
-                            <h3 className="text-2xl font-black tracking-tighter">
+                            <h3 className="text-lg md:text-2xl font-black tracking-tighter truncate">
                                 Rp {dashboardData?.totalRevenue.toLocaleString('id-ID') || 0}
                             </h3>
                         </div>
-
-                        <div className={`p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Transaksi</p>
-                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500"><History size={16} /></div>
+                        <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex justify-between items-start mb-2 md:mb-4">
+                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Transaksi</p>
+                                <div className="p-1.5 md:p-2 rounded-lg bg-blue-500/10 text-blue-500"><History size={14} className="md:w-4 md:h-4" /></div>
                             </div>
-                            <h3 className="text-2xl font-black tracking-tighter">
-                                {dashboardData?.totalTransactions || 0} <span className="text-sm font-bold text-zinc-500">Order</span>
+                            <h3 className="text-lg md:text-2xl font-black tracking-tighter">
+                                {dashboardData?.totalTransactions || 0} <span className="text-[10px] md:text-sm font-bold text-zinc-500">Order</span>
                             </h3>
                         </div>
-
-                        <div className={`p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Masuk via CASH</p>
-                                <div className="p-2 rounded-lg bg-green-500/10 text-green-500"><Banknote size={16} /></div>
+                        <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex justify-between items-start mb-2 md:mb-4">
+                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>CASH</p>
+                                <div className="p-1.5 md:p-2 rounded-lg bg-green-500/10 text-green-500"><Banknote size={14} className="md:w-4 md:h-4" /></div>
                             </div>
-                            <h3 className="text-2xl font-black tracking-tighter text-green-500">
+                            <h3 className="text-lg md:text-2xl font-black tracking-tighter text-green-500 truncate">
                                 Rp {dashboardData?.totalCash.toLocaleString('id-ID') || 0}
                             </h3>
                         </div>
-
-                        <div className={`p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-4">
-                                <p className={`text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Masuk via QRIS</p>
-                                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500"><QrCode size={16} /></div>
+                        <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex justify-between items-start mb-2 md:mb-4">
+                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>QRIS</p>
+                                <div className="p-1.5 md:p-2 rounded-lg bg-purple-500/10 text-purple-500"><QrCode size={14} className="md:w-4 md:h-4" /></div>
                             </div>
-                            <h3 className="text-2xl font-black tracking-tighter text-purple-500">
+                            <h3 className="text-lg md:text-2xl font-black tracking-tighter text-purple-500 truncate">
                                 Rp {dashboardData?.totalQris.toLocaleString('id-ID') || 0}
                             </h3>
                         </div>
                     </div>
 
-                    {/* AREA GRAFIK */}
-                    <div className={`p-5 md:p-8 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
-                        <h3 className="text-sm font-black mb-6 uppercase tracking-widest">Grafik Pendapatan Harian</h3>
-
+                    <div className={`p-4 md:p-8 rounded-2xl border overflow-x-auto ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                        <h3 className="text-xs md:text-sm font-black mb-4 md:mb-6 uppercase tracking-widest">Grafik Pendapatan Harian</h3>
                         {dashboardData?.chartData.length === 0 ? (
-                            <div className={`flex flex-col items-center justify-center py-20 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                            <div className={`flex flex-col items-center justify-center py-10 md:py-20 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}>
                                 <BarChart3 size={40} className="mb-3" />
-                                <p className="font-black text-xs uppercase tracking-widest">Belum ada data jualan</p>
+                                <p className="font-black text-[10px] md:text-xs uppercase tracking-widest">Belum ada data jualan</p>
                             </div>
                         ) : (
-                            <div className="h-[400px] w-full">
+                            <div className="h-[300px] md:h-[400px] min-w-[500px]">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={dashboardData?.chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                                    <BarChart data={dashboardData?.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke={d ? '#27272a' : '#e4e4e7'} vertical={false} />
-                                        <XAxis
-                                            dataKey="name"
-                                            tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }}
-                                            axisLine={false}
-                                            tickLine={false}
-                                            dy={10}
-                                        />
-                                        <YAxis
-                                            tickFormatter={(value) => `Rp ${(value / 1000)}k`}
-                                            tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }}
-                                            axisLine={false}
-                                            tickLine={false}
-                                            dx={-10}
-                                        />
-                                        <Tooltip
-                                            cursor={{ fill: d ? '#27272a' : '#f4f4f5' }}
-                                            contentStyle={{
-                                                backgroundColor: d ? '#18181b' : '#ffffff',
-                                                borderColor: d ? '#27272a' : '#e4e4e7',
-                                                borderRadius: '12px',
-                                                fontWeight: 'bold',
-                                                fontSize: '12px'
-                                            }}
-                                            // @ts-ignore
-                                            formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`]}
-                                        />
-                                        <Legend
-                                            wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 900 }}
-                                            iconType="circle"
-                                        />
+                                        <XAxis dataKey="name" tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} dy={10} />
+                                        <YAxis tickFormatter={(value) => `Rp ${(value / 1000)}k`} tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} dx={-10} />
+                                        {/* @ts-ignore */}
+                                        <Tooltip cursor={{ fill: d ? '#27272a' : '#f4f4f5' }} contentStyle={{ backgroundColor: d ? '#18181b' : '#ffffff', borderColor: d ? '#27272a' : '#e4e4e7', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }} formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`]} />
+                                        <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 900 }} iconType="circle" />
                                         <Bar dataKey="CASH" stackId="a" fill="#22c55e" radius={[0, 0, 4, 4]} />
                                         <Bar dataKey="QRIS" stackId="a" fill="#a855f7" radius={[4, 4, 0, 0]} />
                                     </BarChart>
@@ -192,7 +159,6 @@ export default function DashboardPage() {
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>

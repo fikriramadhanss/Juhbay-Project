@@ -94,7 +94,7 @@ export default function HistoryPage() {
         <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
             {/* ========================================== */}
-            {/* SIDEBAR NAVIGATION */}
+            {/* SIDEBAR NAVIGATION (URUTAN SUDAH BENAR) */}
             {/* ========================================== */}
             <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <div className="px-2 py-4 mb-2 hidden md:block">
@@ -106,23 +106,35 @@ export default function HistoryPage() {
                 </div>
 
                 <Link href="/" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-                    <Store size={17} /> <span className="hidden md:block tracking-wide">Kasir</span>
+                    <Store size={17} />
+                    <span className="hidden md:block tracking-wide">Kasir</span>
                 </Link>
-                <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-                    <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
-                </Link>
-                <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-                    <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
-                </Link>
+
                 <Link href="/history" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black text-xs transition-all">
-                    <HistoryIcon size={17} /> <span className="hidden md:block tracking-wide">Riwayat</span>
+                    <HistoryIcon size={17} />
+                    <span className="hidden md:block tracking-wide">Riwayat</span>
                 </Link>
+
                 <Link href="/manage" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-                    <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
+                    <Settings size={17} />
+                    <span className="hidden md:block tracking-wide">Kelola Menu</span>
+                </Link>
+
+                <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <BookOpen size={17} />
+                    <span className="hidden md:block tracking-wide">Buku Hutang</span>
+                </Link>
+
+                <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <BarChart3 size={17} />
+                    <span className="hidden md:block tracking-wide">Dashboard</span>
                 </Link>
 
                 <div className="mt-auto mb-2">
-                    <button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <button
+                        onClick={() => setIsDark(!d)}
+                        className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}
+                    >
                         {d ? <Sun size={17} /> : <Moon size={17} />}
                         <span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span>
                     </button>
@@ -138,9 +150,14 @@ export default function HistoryPage() {
                     {/* HEADER & FILTER */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 md:mb-8 gap-4">
                         <div>
-                            <h2 className="text-xl md:text-3xl font-black tracking-tight mb-1">History</h2>
-                            <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Laporan Penjualan</p>
+                            <h2 className="text-xl md:text-3xl font-black tracking-tight mb-1">
+                                History
+                            </h2>
+                            <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                Laporan Penjualan
+                            </p>
                         </div>
+
                         <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
                             <input
                                 type="date"
@@ -148,10 +165,16 @@ export default function HistoryPage() {
                                 onChange={(e) => setFilterDate(e.target.value)}
                                 className={`flex-1 md:flex-none p-2 md:p-2.5 rounded-xl font-bold text-xs outline-none border ${d ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}
                             />
-                            <button onClick={handleExportPDF} className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 md:px-4 py-2 md:py-2.5 rounded-xl transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-1.5 md:gap-2">
+                            <button
+                                onClick={handleExportPDF}
+                                className="bg-amber-500 hover:bg-amber-400 text-black font-black px-3 md:px-4 py-2 md:py-2.5 rounded-xl transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-1.5 md:gap-2"
+                            >
                                 <Download size={14} /> PDF
                             </button>
-                            <button onClick={handleClearHistory} className={`border border-red-500/50 text-red-500 hover:bg-red-500/10 font-black px-3 md:px-4 py-2 md:py-2.5 rounded-xl transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-1.5 md:gap-2`}>
+                            <button
+                                onClick={handleClearHistory}
+                                className={`border border-red-500/50 text-red-500 hover:bg-red-500/10 font-black px-3 md:px-4 py-2 md:py-2.5 rounded-xl transition-all active:scale-95 text-[10px] md:text-xs uppercase tracking-widest flex items-center gap-1.5 md:gap-2`}
+                            >
                                 <Trash2 size={14} /> Hapus
                             </button>
                         </div>
@@ -160,16 +183,30 @@ export default function HistoryPage() {
                     {/* SUMMARY CARDS */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 mb-6 md:mb-8">
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Transaksi</p>
-                            <h3 className="text-lg md:text-2xl font-black">{historyData?.totalTrx || 0}</h3>
+                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                Transaksi
+                            </p>
+                            <h3 className="text-lg md:text-2xl font-black">
+                                {historyData?.totalTrx || 0}
+                            </h3>
                         </div>
+
                         <div className={`p-4 md:p-5 rounded-2xl border col-span-2 sm:col-span-1 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total</p>
-                            <h3 className="text-lg md:text-2xl font-black truncate">Rp {historyData?.totalAmount.toLocaleString('id-ID') || 0}</h3>
+                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                Total
+                            </p>
+                            <h3 className="text-lg md:text-2xl font-black truncate">
+                                Rp {historyData?.totalAmount.toLocaleString('id-ID') || 0}
+                            </h3>
                         </div>
+
                         <div className={`p-4 md:p-5 rounded-2xl border hidden sm:block ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Mutasi QRIS</p>
-                            <h3 className="text-lg md:text-2xl font-black">{historyData?.qrisCount || 0} <span className="text-[10px] md:text-sm font-bold text-zinc-500">trx</span></h3>
+                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                Mutasi QRIS
+                            </p>
+                            <h3 className="text-lg md:text-2xl font-black">
+                                {historyData?.qrisCount || 0} <span className="text-[10px] md:text-sm font-bold text-zinc-500">trx</span>
+                            </h3>
                         </div>
                     </div>
 
@@ -191,7 +228,9 @@ export default function HistoryPage() {
                                     {(!historyData?.sales || historyData.sales.length === 0) ? (
                                         <tr>
                                             <td colSpan={6} className="px-4 md:px-6 py-10 md:py-12 text-center">
-                                                <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Belum ada transaksi</p>
+                                                <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                                                    Belum ada transaksi
+                                                </p>
                                             </td>
                                         </tr>
                                     ) : (
@@ -202,20 +241,30 @@ export default function HistoryPage() {
 
                                             return (
                                                 <tr key={sale.id} className={`transition-colors ${d ? 'hover:bg-zinc-800/50' : 'hover:bg-zinc-50'}`}>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4">
-                                                        <span className="text-[10px] md:text-[11px] font-black text-amber-500">#TRX-{sale.id}</span>
+                                                        <span className="text-[10px] md:text-[11px] font-black text-amber-500">
+                                                            #TRX-{sale.id}
+                                                        </span>
                                                     </td>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4">
                                                         <div className="flex flex-col">
-                                                            <span className={`text-[9px] md:text-[10px] font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>{tgl}</span>
-                                                            <span className={`text-[8px] md:text-[9px] font-black ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>{jam}</span>
+                                                            <span className={`text-[9px] md:text-[10px] font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                                                                {tgl}
+                                                            </span>
+                                                            <span className={`text-[8px] md:text-[9px] font-black ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                                                {jam}
+                                                            </span>
                                                         </div>
                                                     </td>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4">
                                                         <span className={`text-[11px] md:text-xs font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>
                                                             {sale.customerName && sale.customerName !== '-' ? sale.customerName : <span className="opacity-50 italic">Anonim</span>}
                                                         </span>
                                                     </td>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4">
                                                         <div className="flex flex-col items-start gap-1">
                                                             <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md border 
@@ -225,6 +274,7 @@ export default function HistoryPage() {
                                                                             : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>
                                                                 {sale.paymentMethod}
                                                             </span>
+
                                                             {sale.paymentMethod === 'SPLIT' && (
                                                                 <div className={`text-[7px] md:text-[8px] font-bold mt-1 leading-tight ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>
                                                                     C: {sale.cashAmount?.toLocaleString('id-ID')}<br />
@@ -233,18 +283,26 @@ export default function HistoryPage() {
                                                             )}
                                                         </div>
                                                     </td>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4">
                                                         <div className="space-y-1">
                                                             {sale.items.map((item, idx) => (
                                                                 <div key={idx} className={`text-[10px] md:text-[11px] font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>
-                                                                    {item.name} <span className="text-amber-500 ml-1">x{item.quantity}</span>
+                                                                    {item.name}
+                                                                    <span className="text-amber-500 ml-1">
+                                                                        x{item.quantity}
+                                                                    </span>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     </td>
+
                                                     <td className="px-4 md:px-6 py-3 md:py-4 text-right">
-                                                        <span className="text-xs md:text-sm font-black">Rp {sale.totalAmount.toLocaleString('id-ID')}</span>
+                                                        <span className="text-xs md:text-sm font-black">
+                                                            Rp {sale.totalAmount.toLocaleString('id-ID')}
+                                                        </span>
                                                     </td>
+
                                                 </tr>
                                             );
                                         })
