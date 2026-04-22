@@ -11,6 +11,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export default function POSPage() {
+  // ==========================================
+  // STATE & VARIABEL
+  // ==========================================
   const [cart, setCart] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'QRIS' | 'SPLIT'>('CASH');
   const [splitCash, setSplitCash] = useState('');
@@ -24,6 +27,9 @@ export default function POSPage() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
 
+  // ==========================================
+  // AMBIL DATA MENU DARI DATABASE
+  // ==========================================
   const activeProducts = useLiveQuery(async () => {
     const all = await db.products.toArray();
     const active = all.filter(p => p.isActive === true);
@@ -37,6 +43,9 @@ export default function POSPage() {
     return grouped;
   });
 
+  // ==========================================
+  // FUNGSI KERANJANG
+  // ==========================================
   const addToCart = (product: Product) => {
     if (product.price === 0) {
       setSelectedProduct(product);
@@ -75,6 +84,9 @@ export default function POSPage() {
 
   const cartTotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
 
+  // ==========================================
+  // FUNGSI PEMBAYARAN & KASBON
+  // ==========================================
   const processPayment = async (isKasbon: boolean) => {
     if (isKasbon && !customerName.trim()) {
       return alert('Nama temen/pelanggan harus diisi kalau mau ngutang!');
@@ -128,6 +140,9 @@ export default function POSPage() {
     setIsCheckoutModalOpen(false);
   };
 
+  // ==========================================
+  // FUNGSI TUTUP KASIR (CETAK PDF)
+  // ==========================================
   const handleTutupKasir = async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -207,27 +222,29 @@ export default function POSPage() {
   return (
     <div className={`flex h-screen font-sans overflow-hidden relative transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
+      {/* ========================================== */}
       {/* MODAL MANUAL BREW */}
+      {/* ========================================== */}
       {isManualModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+          <div className={`rounded-2xl p-5 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-base font-black uppercase tracking-widest">Manual Brew</h3>
+              <h3 className="text-sm md:text-base font-black uppercase tracking-widest">Manual Brew</h3>
               <button onClick={() => setIsManualModalOpen(false)} className={`p-2 rounded-lg ${d ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}><X size={18} /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Nama Beans / Kopi</label>
+                <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Nama Beans / Kopi</label>
                 <input type="text" value={manualName} onChange={e => setManualName(e.target.value)}
-                  className={`w-full p-3 rounded-xl font-bold outline-none border text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`} />
+                  className={`w-full p-2.5 md:p-3 rounded-xl font-bold outline-none border text-xs md:text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`} />
               </div>
               <div>
-                <label className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga (Rp)</label>
+                <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Harga (Rp)</label>
                 <input type="number" value={manualPrice} onChange={e => setManualPrice(e.target.value)}
-                  className={`w-full p-3 rounded-xl font-black text-lg outline-none border ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
+                  className={`w-full p-2.5 md:p-3 rounded-xl font-black text-base md:text-lg outline-none border ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
                   placeholder="Cth: 25000" />
               </div>
-              <button onClick={addManualToCart} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-sm">
+              <button onClick={addManualToCart} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-3 md:py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs md:text-sm">
                 Masuk Keranjang
               </button>
             </div>
@@ -235,35 +252,37 @@ export default function POSPage() {
         </div>
       )}
 
+      {/* ========================================== */}
       {/* MODAL CHECKOUT CONFIRMATION */}
+      {/* ========================================== */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`rounded-2xl p-6 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-base font-black uppercase tracking-widest text-amber-500">Konfirmasi</h3>
+          <div className={`rounded-2xl p-5 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+            <div className="flex justify-between items-center mb-5 md:mb-6">
+              <h3 className="text-sm md:text-base font-black uppercase tracking-widest text-amber-500">Konfirmasi</h3>
               <button onClick={() => setIsCheckoutModalOpen(false)} className={`p-2 rounded-lg transition-colors ${d ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}><X size={18} /></button>
             </div>
 
-            <div className="text-center mb-6">
-              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Tagihan</p>
-              <p className="text-4xl font-black tracking-tighter">Rp {cartTotal.toLocaleString('id-ID')}</p>
+            <div className="text-center mb-5 md:mb-6">
+              <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Tagihan</p>
+              <p className="text-2xl md:text-4xl font-black tracking-tighter">Rp {cartTotal.toLocaleString('id-ID')}</p>
             </div>
 
-            <div className="mb-6 text-left">
-              <label className={`text-[10px] font-black uppercase tracking-widest block mb-2 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nama Pelanggan / Temen</label>
+            <div className="mb-5 md:mb-6 text-left">
+              <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nama Pelanggan / Temen</label>
               <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)}
-                className={`w-full p-3 rounded-xl font-bold outline-none border text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
+                className={`w-full p-2.5 md:p-3 rounded-xl font-bold outline-none border text-xs md:text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
                 placeholder="Cth: Yudha / Hanif" />
             </div>
 
-            <div className="space-y-3">
-              <button onClick={() => processPayment(false)} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+            <div className="space-y-2 md:space-y-3">
+              <button onClick={() => processPayment(false)} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-3 md:py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-[10px] md:text-sm flex items-center justify-center gap-2">
                 <CheckCircle size={16} /> Udah Bayar Lunas
               </button>
-              <button onClick={() => processPayment(true)} className={`w-full border-2 font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs border-red-500/50 text-red-500 hover:bg-red-500/10`}>
+              <button onClick={() => processPayment(true)} className={`w-full border-2 font-black py-2.5 md:py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-[9px] md:text-xs border-red-500/50 text-red-500 hover:bg-red-500/10`}>
                 Belum Bayar (Ngutang)
               </button>
-              <button onClick={cancelOrder} className={`w-full font-black py-2 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs ${d ? 'text-zinc-500 hover:bg-zinc-800' : 'text-zinc-400 hover:bg-zinc-100'}`}>
+              <button onClick={cancelOrder} className={`w-full font-black py-2 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-[9px] md:text-xs ${d ? 'text-zinc-500 hover:bg-zinc-800' : 'text-zinc-400 hover:bg-zinc-100'}`}>
                 Kembali (Batal)
               </button>
             </div>
@@ -271,7 +290,9 @@ export default function POSPage() {
         </div>
       )}
 
-      {/* SIDEBAR */}
+      {/* ========================================== */}
+      {/* SIDEBAR NAVIGATION */}
+      {/* ========================================== */}
       <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 transition-colors duration-300 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
         <div className="px-2 py-4 mb-2 hidden md:block">
           <p className="text-[9px] font-black text-amber-500 tracking-[0.3em] uppercase mb-1">EST. 2024</p>
@@ -284,20 +305,19 @@ export default function POSPage() {
         <Link href="/" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black transition-all">
           <Store size={17} /> <span className="hidden md:block text-xs tracking-wide">Kasir</span>
         </Link>
+        <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+          <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
+        </Link>
+        <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+          <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
+        </Link>
         <Link href="/history" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
           <History size={17} /> <span className="hidden md:block tracking-wide">Riwayat</span>
         </Link>
         <Link href="/manage" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
           <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
         </Link>
-        <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-          <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
-        </Link>
-        <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-          <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
-        </Link>
 
-        {/* TOMBOL TUTUP KASIR */}
         <div className="mt-auto mb-2">
           <button onClick={handleTutupKasir} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-black text-xs transition-all ${d ? 'bg-zinc-800 text-amber-500 hover:bg-amber-500 hover:text-black' : 'bg-zinc-100 text-amber-600 hover:bg-amber-500 hover:text-white'}`}>
             <FileText size={17} />
@@ -313,29 +333,34 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* MAIN AREA */}
+      {/* ========================================== */}
+      {/* MAIN AREA (MENU GRID + CART) */}
+      {/* ========================================== */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-w-0">
 
-        {/* MENU GRID */}
+        {/* ========================================== */}
+        {/* BAGIAN KIRI: MENU GRID */}
+        {/* ========================================== */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 min-h-0">
-          <h2 className={`text-xs font-black tracking-[0.3em] uppercase mb-5 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Order Menu</h2>
+          <h2 className={`text-xs font-black tracking-[0.3em] uppercase mb-4 md:mb-5 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Order Menu</h2>
+
           {activeProducts && Object.entries(activeProducts).map(([cat, names]) => (
-            <div key={cat} className="mb-7">
-              <h3 className={`text-[9px] font-black tracking-[0.3em] uppercase mb-3 px-3 py-1 rounded-full inline-block border ${d ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>{cat}</h3>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
+            <div key={cat} className="mb-5 md:mb-7">
+              <h3 className={`text-[8px] md:text-[9px] font-black tracking-[0.3em] uppercase mb-2 md:mb-3 px-3 py-1 rounded-full inline-block border ${d ? 'text-amber-500 bg-amber-500/10 border-amber-500/20' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>{cat}</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
                 {Object.entries(names).map(([name, variants]) => (
                   <div key={name} className={`p-3 md:p-4 rounded-2xl border flex flex-col justify-between transition-all ${d ? 'bg-zinc-900 border-zinc-800 hover:border-zinc-700' : 'bg-white border-zinc-200 shadow-sm hover:border-zinc-300'}`}>
-                    <h4 className="font-black text-xs md:text-sm mb-3 leading-tight">{name}</h4>
-                    <div className="space-y-1.5">
+                    <h4 className="font-black text-[11px] md:text-sm mb-2 md:mb-3 leading-tight">{name}</h4>
+                    <div className="space-y-1 md:space-y-1.5">
                       {variants.map(v => (
                         <button key={v.id} onClick={() => addToCart(v)} disabled={v.stock <= 0 && v.price !== 0}
-                          className={`w-full flex justify-between items-center p-2 rounded-xl font-bold transition-all disabled:opacity-30 group
+                          className={`w-full flex justify-between items-center p-1.5 md:p-2 rounded-xl font-bold transition-all disabled:opacity-30 group
                             ${d ? 'bg-zinc-800 hover:bg-amber-500 hover:text-black text-zinc-300' : 'bg-zinc-100 hover:bg-amber-500 hover:text-black text-zinc-700'}`}>
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className="opacity-50 uppercase text-[8px] tracking-wider">{v.variant || 'Regular'}</span>
-                            <span className={`text-[8px] font-bold group-hover:text-black/60 ${d ? 'text-amber-500' : 'text-amber-600'}`}>Sisa: {v.stock}</span>
+                          <div className="flex flex-col items-start gap-0 md:gap-0.5">
+                            <span className="opacity-50 uppercase text-[7px] md:text-[8px] tracking-wider">{v.variant || 'Regular'}</span>
+                            <span className={`text-[7px] md:text-[8px] font-bold group-hover:text-black/60 ${d ? 'text-amber-500' : 'text-amber-600'}`}>Sisa: {v.stock}</span>
                           </div>
-                          <span className="text-[10px] font-black">{v.price === 0 ? 'PILIH' : `Rp ${v.price.toLocaleString('id-ID')}`}</span>
+                          <span className="text-[9px] md:text-[10px] font-black">{v.price === 0 ? 'PILIH' : `Rp ${v.price.toLocaleString('id-ID')}`}</span>
                         </button>
                       ))}
                     </div>
@@ -346,89 +371,92 @@ export default function POSPage() {
           ))}
         </div>
 
-        {/* CART */}
-        <div className={`w-full md:w-72 lg:w-80 flex flex-col border-t md:border-t-0 md:border-l flex-shrink-0 transition-colors duration-300 h-[42vh] md:h-auto ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+        {/* ========================================== */}
+        {/* BAGIAN KANAN: CART & CHECKOUT */}
+        {/* ========================================== */}
+        <div className={`w-full md:w-72 lg:w-80 flex flex-col border-t md:border-t-0 md:border-l flex-shrink-0 transition-colors duration-300 h-[45vh] md:h-auto ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
 
           <div className={`p-3 md:p-5 border-b flex justify-between items-center flex-shrink-0 ${d ? 'border-zinc-800' : 'border-zinc-100'}`}>
-            <h2 className="font-black flex items-center gap-2 text-sm">
-              <ShoppingCart size={16} className="text-amber-500" />
+            <h2 className="font-black flex items-center gap-2 text-xs md:text-sm">
+              <ShoppingCart size={14} className="md:w-4 md:h-4 text-amber-500" />
               Keranjang
               {cart.length > 0 && (
-                <span className="bg-amber-500 text-black text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center ml-1">{cart.length}</span>
+                <span className="bg-amber-500 text-black text-[8px] md:text-[9px] font-black w-4 h-4 md:w-4 md:h-4 rounded-full flex items-center justify-center ml-1">{cart.length}</span>
               )}
             </h2>
-            <button onClick={() => setCart([])} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
+            <button onClick={() => setCart([])} className="text-[8px] md:text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline">Clear</button>
           </div>
 
-          <div className="flex-1 p-3 overflow-y-auto space-y-2 min-h-0">
+          <div className="flex-1 p-2 md:p-3 overflow-y-auto space-y-1.5 md:space-y-2 min-h-0">
             {cart.length === 0 && (
               <div className={`flex flex-col items-center justify-center h-full py-6 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}>
-                <ShoppingCart size={28} className="mb-2" />
-                <p className="text-[9px] font-black uppercase tracking-widest">Keranjang kosong</p>
+                <ShoppingCart size={24} className="md:w-7 md:h-7 mb-2" />
+                <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">Keranjang kosong</p>
               </div>
             )}
             {cart.map(item => (
-              <div key={item.cartKey} className={`flex justify-between items-center p-3 rounded-xl border ${d ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
+              <div key={item.cartKey} className={`flex justify-between items-center p-2 md:p-3 rounded-xl border ${d ? 'bg-zinc-800 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
                 <div className="flex-1 min-w-0 pr-2">
-                  <p className="text-[11px] font-black truncate leading-tight">{item.name}</p>
-                  <p className={`text-[10px] font-bold mt-0.5 ${d ? 'text-amber-500' : 'text-amber-600'}`}>
+                  <p className="text-[9px] md:text-[11px] font-black truncate leading-tight">{item.name}</p>
+                  <p className={`text-[8px] md:text-[10px] font-bold mt-0.5 ${d ? 'text-amber-500' : 'text-amber-600'}`}>
                     Rp {item.price.toLocaleString()} <span className={`font-normal ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>x{item.quantity}</span>
                   </p>
                 </div>
                 <button onClick={() => setCart(cart.filter(c => c.cartKey !== item.cartKey))}
                   className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${d ? 'text-zinc-600 hover:text-red-500 hover:bg-zinc-700' : 'text-zinc-300 hover:text-red-500 hover:bg-zinc-100'}`}>
-                  <Trash2 size={13} />
+                  <Trash2 size={12} className="md:w-3.5 md:h-3.5" />
                 </button>
               </div>
             ))}
           </div>
 
-          <div className={`p-3 md:p-5 border-t space-y-3 flex-shrink-0 ${d ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-100 bg-zinc-50'}`}>
-            <div>
-              <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Metode Bayar (Jika Lunas)</p>
-              <div className="flex gap-2">
+          <div className={`p-3 md:p-5 border-t flex-shrink-0 ${d ? 'border-zinc-800 bg-zinc-950' : 'border-zinc-100 bg-zinc-50'}`}>
+            <div className="mb-2 md:mb-3">
+              <p className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Metode Bayar (Lunas)</p>
+              <div className="flex gap-1.5 md:gap-2">
                 <button onClick={() => setPaymentMethod('CASH')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-[10px] transition-all tracking-wider
+                  className={`flex-1 flex items-center justify-center gap-1 md:gap-1.5 py-1.5 md:py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all tracking-wider
                     ${paymentMethod === 'CASH' ? 'bg-amber-500 text-black' : d ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-200 text-zinc-400'}`}>
-                  <Banknote size={13} /> CASH
+                  <Banknote size={10} className="md:w-3 md:h-3" /> CASH
                 </button>
                 <button onClick={() => setPaymentMethod('QRIS')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-[10px] transition-all tracking-wider
+                  className={`flex-1 flex items-center justify-center gap-1 md:gap-1.5 py-1.5 md:py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all tracking-wider
                     ${paymentMethod === 'QRIS' ? 'bg-blue-600 text-white' : d ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-200 text-zinc-400'}`}>
-                  <QrCode size={13} /> QRIS
+                  <QrCode size={10} className="md:w-3 md:h-3" /> QRIS
                 </button>
                 <button onClick={() => setPaymentMethod('SPLIT')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl font-black text-[10px] transition-all tracking-wider
+                  className={`flex-1 flex items-center justify-center gap-1 md:gap-1.5 py-1.5 md:py-2 rounded-xl font-black text-[8px] md:text-[10px] transition-all tracking-wider
                     ${paymentMethod === 'SPLIT' ? 'bg-purple-500 text-white' : d ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-200 text-zinc-400'}`}>
-                  <SplitSquareHorizontal size={13} /> SPLIT
+                  <SplitSquareHorizontal size={10} className="md:w-3 md:h-3" /> SPLIT
                 </button>
               </div>
             </div>
 
             {/* INPUT NOMINAL JIKA SPLIT */}
             {paymentMethod === 'SPLIT' && (
-              <div className={`p-3 rounded-xl border ${d ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
-                <label className={`text-[9px] font-black uppercase tracking-widest block mb-1 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nominal Cash (Sisanya QRIS)</label>
+              <div className={`p-2 md:p-3 rounded-xl border mb-2 md:mb-3 ${d ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
+                <label className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest block mb-1 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nominal Cash</label>
                 <input type="number" value={splitCash} onChange={e => setSplitCash(e.target.value)}
-                  className={`w-full p-2 rounded-lg font-bold outline-none border text-xs mb-2 ${d ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} placeholder="Masukkan uang cash..." />
-                <p className={`text-[9px] font-bold ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  className={`w-full p-1.5 md:p-2 rounded-lg font-bold outline-none border text-[10px] md:text-xs mb-1.5 md:mb-2 ${d ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200'}`} placeholder="Masukkan uang cash..." />
+                <p className={`text-[8px] md:text-[9px] font-bold ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Sisa via QRIS: <span className="text-purple-500">Rp {(cartTotal - (parseInt(splitCash) || 0)).toLocaleString('id-ID')}</span>
                 </p>
               </div>
             )}
 
-            <div className="flex justify-between items-end mb-1">
-              <span className={`text-[9px] font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Total</span>
-              <span className="text-xl font-black tracking-tighter">
+            <div className="flex justify-between items-end mb-2 md:mb-3 mt-1">
+              <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Total</span>
+              <span className="text-lg md:text-xl font-black tracking-tighter">
                 Rp {cartTotal.toLocaleString('id-ID')}
               </span>
             </div>
             <button onClick={() => setIsCheckoutModalOpen(true)} disabled={cart.length === 0}
-              className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-black py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-xs">
+              className="w-full bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-800 disabled:text-zinc-600 text-black font-black py-2.5 md:py-3 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-[10px] md:text-xs">
               Bayar Sekarang
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );
