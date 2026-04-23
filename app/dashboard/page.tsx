@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
-import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, TrendingUp, Banknote, QrCode, BookOpen } from 'lucide-react';
+import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, TrendingUp, Banknote, QrCode, BookOpen, Calculator } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -24,9 +24,7 @@ export default function DashboardPage() {
             const dateObj = new Date(sale.date);
             const dateStr = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
 
-            if (!acc[dateStr]) {
-                acc[dateStr] = { name: dateStr, Total: 0, CASH: 0, QRIS: 0 };
-            }
+            if (!acc[dateStr]) acc[dateStr] = { name: dateStr, Total: 0, CASH: 0, QRIS: 0 };
 
             const cAmt = sale.cashAmount || (sale.paymentMethod === 'CASH' ? sale.totalAmount : 0);
             const qAmt = sale.qrisAmount || (sale.paymentMethod === 'QRIS' ? sale.totalAmount : 0);
@@ -42,9 +40,7 @@ export default function DashboardPage() {
             return acc;
         }, {} as Record<string, { name: string, Total: number, CASH: number, QRIS: number }>);
 
-        const chartData = Object.values(groupedByDate);
-
-        return { chartData, totalRevenue, totalCash, totalQris, totalTransactions: sales.length };
+        return { chartData: Object.values(groupedByDate), totalRevenue, totalCash, totalQris, totalTransactions: sales.length };
     });
 
     const d = isDark;
@@ -52,15 +48,13 @@ export default function DashboardPage() {
     return (
         <div className={`flex h-screen font-sans overflow-hidden transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
-            {/* SIDEBAR NAVIGATION (URUTAN SUDAH BENAR) */}
+            {/* SIDEBAR NAVIGATION */}
             <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                 <div className="px-2 py-4 mb-2 hidden md:block">
                     <p className="text-[9px] font-black text-amber-500 tracking-[0.3em] uppercase mb-1">EST. 2024</p>
                     <h1 className="text-base font-black tracking-tight leading-none">Juhbay Coffee</h1>
                 </div>
-                <div className="flex justify-center md:hidden py-3">
-                    <Coffee size={20} className="text-amber-500" />
-                </div>
+                <div className="flex justify-center md:hidden py-3"><Coffee size={20} className="text-amber-500" /></div>
 
                 <Link href="/" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <Store size={17} /> <span className="hidden md:block tracking-wide">Kasir</span>
@@ -71,6 +65,9 @@ export default function DashboardPage() {
                 <Link href="/manage" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <Settings size={17} /> <span className="hidden md:block tracking-wide">Kelola Menu</span>
                 </Link>
+                <Link href="/hpp" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <Calculator size={17} /> <span className="hidden md:block tracking-wide">Kelola HPP</span>
+                </Link>
                 <Link href="/hutang" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span>
                 </Link>
@@ -78,70 +75,39 @@ export default function DashboardPage() {
                     <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
                 </Link>
 
-                <div className="mt-auto mb-2">
-                    <button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
-                        {d ? <Sun size={17} /> : <Moon size={17} />}
-                        <span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span>
-                    </button>
-                </div>
+                <div className="mt-auto mb-2"><button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>{d ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span></button></div>
             </div>
 
-            {/* MAIN CONTENT */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-6xl mx-auto">
                     <div className="mb-6 md:mb-8">
                         <h2 className="text-xl md:text-3xl font-black tracking-tight mb-1">Dashboard</h2>
-                        <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                            Ringkasan Performa Kedai
-                        </p>
+                        <p className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Ringkasan Performa Kedai</p>
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <div className="flex justify-between items-start mb-2 md:mb-4">
-                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Pendapatan</p>
-                                <div className="p-1.5 md:p-2 rounded-lg bg-amber-500/10 text-amber-500"><TrendingUp size={14} className="md:w-4 md:h-4" /></div>
-                            </div>
-                            <h3 className="text-lg md:text-2xl font-black tracking-tighter truncate">
-                                Rp {dashboardData?.totalRevenue.toLocaleString('id-ID') || 0}
-                            </h3>
+                            <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Omzet</p><div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500"><TrendingUp size={14} /></div></div>
+                            <h3 className="text-lg md:text-2xl font-black truncate text-blue-500">Rp {dashboardData?.totalRevenue.toLocaleString('id-ID') || 0}</h3>
                         </div>
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <div className="flex justify-between items-start mb-2 md:mb-4">
-                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Transaksi</p>
-                                <div className="p-1.5 md:p-2 rounded-lg bg-blue-500/10 text-blue-500"><History size={14} className="md:w-4 md:h-4" /></div>
-                            </div>
-                            <h3 className="text-lg md:text-2xl font-black tracking-tighter">
-                                {dashboardData?.totalTransactions || 0} <span className="text-[10px] md:text-sm font-bold text-zinc-500">Order</span>
-                            </h3>
+                            <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Trx</p><div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500"><History size={14} /></div></div>
+                            <h3 className="text-lg md:text-2xl font-black truncate">{dashboardData?.totalTransactions || 0} <span className="text-[10px] md:text-sm font-bold text-zinc-500">Order</span></h3>
                         </div>
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <div className="flex justify-between items-start mb-2 md:mb-4">
-                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>CASH</p>
-                                <div className="p-1.5 md:p-2 rounded-lg bg-green-500/10 text-green-500"><Banknote size={14} className="md:w-4 md:h-4" /></div>
-                            </div>
-                            <h3 className="text-lg md:text-2xl font-black tracking-tighter text-green-500 truncate">
-                                Rp {dashboardData?.totalCash.toLocaleString('id-ID') || 0}
-                            </h3>
+                            <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Masuk CASH</p><div className="p-1.5 rounded-lg bg-green-500/10 text-green-500"><Banknote size={14} /></div></div>
+                            <h3 className="text-lg md:text-2xl font-black truncate text-green-500">Rp {dashboardData?.totalCash.toLocaleString('id-ID') || 0}</h3>
                         </div>
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                            <div className="flex justify-between items-start mb-2 md:mb-4">
-                                <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>QRIS</p>
-                                <div className="p-1.5 md:p-2 rounded-lg bg-purple-500/10 text-purple-500"><QrCode size={14} className="md:w-4 md:h-4" /></div>
-                            </div>
-                            <h3 className="text-lg md:text-2xl font-black tracking-tighter text-purple-500 truncate">
-                                Rp {dashboardData?.totalQris.toLocaleString('id-ID') || 0}
-                            </h3>
+                            <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Masuk QRIS</p><div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-500"><QrCode size={14} /></div></div>
+                            <h3 className="text-lg md:text-2xl font-black truncate text-purple-500">Rp {dashboardData?.totalQris.toLocaleString('id-ID') || 0}</h3>
                         </div>
                     </div>
 
                     <div className={`p-4 md:p-8 rounded-2xl border overflow-x-auto ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
-                        <h3 className="text-xs md:text-sm font-black mb-4 md:mb-6 uppercase tracking-widest">Grafik Pendapatan Harian</h3>
+                        <h3 className="text-xs md:text-sm font-black mb-4 md:mb-6 uppercase tracking-widest">Grafik Omzet Harian</h3>
                         {dashboardData?.chartData.length === 0 ? (
-                            <div className={`flex flex-col items-center justify-center py-10 md:py-20 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}>
-                                <BarChart3 size={40} className="mb-3" />
-                                <p className="font-black text-[10px] md:text-xs uppercase tracking-widest">Belum ada data jualan</p>
-                            </div>
+                            <div className={`flex flex-col items-center justify-center py-10 md:py-20 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}><BarChart3 size={40} className="mb-3" /><p className="font-black text-[10px] md:text-xs uppercase tracking-widest">Belum ada data jualan</p></div>
                         ) : (
                             <div className="h-[300px] md:h-[400px] min-w-[500px]">
                                 <ResponsiveContainer width="100%" height="100%">
