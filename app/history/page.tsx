@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../lib/db';
 import { Store, History as HistoryIcon, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, Download, Trash2, Calculator } from 'lucide-react';
@@ -18,11 +18,11 @@ export default function HistoryPage() {
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
 
     // ==========================================
-    // AMBIL DATA TRANSAKSI DARI DATABASE (DENGAN FIX HPP RETROAKTIF)
+    // AMBIL DATA TRANSAKSI DARI DATABASE
     // ==========================================
     const historyData = useLiveQuery(async () => {
         const allSales = await db.sales.reverse().toArray();
-        const allProducts = await db.products.toArray(); // Tarik data menu buat referensi modal
+        const allProducts = await db.products.toArray();
 
         // Filter berdasarkan tanggal
         const filtered = allSales.filter(sale => {
@@ -30,12 +30,11 @@ export default function HistoryPage() {
             return saleDate === filterDate;
         });
 
-        // FIX: Kalkulasi ulang profit kalau HPP-nya 0 (Kasus transaksi lama)
+        // Kalkulasi ulang profit kalau HPP-nya 0 (Kasus transaksi lama / retroaktif)
         const salesWithFix = filtered.map(sale => {
             let realProfit = 0;
             const fixedItems = sale.items.map(item => {
                 let currentHpp = item.hpp;
-                // Kalau hpp 0 atau kosong, tarik paksa dari database master produk
                 if (!currentHpp || currentHpp === 0) {
                     const master = allProducts.find(p => p.id === item.productId);
                     currentHpp = master?.hppTotal || 0;
@@ -46,7 +45,7 @@ export default function HistoryPage() {
             return { ...sale, items: fixedItems, totalProfit: realProfit };
         });
 
-        // Buat ringkasan atas, hitung dari yang UDAH LUNAS aja biar valid
+        // Hitung dari yang UDAH LUNAS aja buat di kotak ringkasan atas
         const lunasSales = salesWithFix.filter(s => s.status !== 'UNPAID');
 
         const totalAmount = lunasSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -56,7 +55,7 @@ export default function HistoryPage() {
         const cashCount = lunasSales.filter(s => s.paymentMethod === 'CASH' || s.paymentMethod === 'SPLIT').length;
 
         return {
-            sales: salesWithFix, // Tabel nampilin semua (termasuk kasbon)
+            sales: salesWithFix,
             totalAmount,
             totalProfit,
             totalTrx: lunasSales.length,
@@ -66,7 +65,7 @@ export default function HistoryPage() {
     }, [filterDate]);
 
     // ==========================================
-    // FUNGSI EXPORT PDF
+    // FUNGSI EXPORT PDF YANG UDAH DIRAPIHIN
     // ==========================================
     const handleExportPDF = () => {
         if (!historyData || historyData.sales.length === 0) return alert('Tidak ada data untuk dicetak!');
@@ -101,13 +100,14 @@ export default function HistoryPage() {
             const d = sale.date;
             const tglJam = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}.${d.getMinutes().toString().padStart(2, '0')}`;
 
-            const itemsStr = sale.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+            // Format orderan dibikin enter ke bawah biar rapih, nggak nyamping
+            const itemsStr = sale.items.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
 
             const methodDisplay = sale.paymentMethod === 'SPLIT'
-                ? `SPLIT (C: ${sale.cashAmount}, Q: ${sale.qrisAmount})`
+                ? `SPLIT\n(C: ${sale.cashAmount}, Q: ${sale.qrisAmount})`
                 : sale.paymentMethod;
 
-            const isUnpaid = sale.status === 'UNPAID' ? '[BELUM BAYAR] ' : '';
+            const isUnpaid = sale.status === 'UNPAID' ? '[BELUM BAYAR]\n' : '';
 
             return [
                 `#TRX-${sale.id}`,
@@ -125,7 +125,11 @@ export default function HistoryPage() {
             body: tableData,
             theme: 'striped',
             headStyles: { fillColor: [39, 39, 42] },
-            styles: { fontSize: 8 }
+            styles: { fontSize: 8, cellPadding: 2 },
+            columnStyles: {
+                2: { cellWidth: 35 }, // Kolom Nama Pembeli dilebarin
+                4: { cellWidth: 55 }, // Kolom Detail Orderan dilebarin
+            }
         });
 
         doc.save(`Riwayat_Penjualan_${filterDate}.pdf`);
@@ -221,8 +225,12 @@ export default function HistoryPage() {
                             <table className="w-full text-left min-w-[700px]">
                                 <thead className={`border-b ${d ? 'border-zinc-800' : 'border-zinc-200'}`}>
                                     <tr className={`text-[9px] font-black uppercase tracking-widest ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>
-                                        <th className="px-4 py-3">ID</th><th className="px-4 py-3">Waktu</th><th className="px-4 py-3">Nama</th>
-                                        <th className="px-4 py-3">Metode</th><th className="px-4 py-3">Items</th><th className="px-4 py-3 text-right">Total</th>
+                                        <th className="px-4 py-3">ID</th>
+                                        <th className="px-4 py-3">Waktu</th>
+                                        <th className="px-4 py-3">Nama Pembeli</th>
+                                        <th className="px-4 py-3">Metode</th>
+                                        <th className="px-4 py-3">Items</th>
+                                        <th className="px-4 py-3 text-right">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody className={`divide-y ${d ? 'divide-zinc-800/50' : 'divide-zinc-100'}`}>
@@ -240,7 +248,10 @@ export default function HistoryPage() {
                                                 <tr key={sale.id} className={`transition-colors ${isKasbon ? (d ? 'bg-red-950/20' : 'bg-red-50') : (d ? 'hover:bg-zinc-800/50' : 'hover:bg-zinc-50')}`}>
                                                     <td className="px-4 py-3"><span className="text-[10px] font-black text-amber-500">#TRX-{sale.id}</span></td>
                                                     <td className="px-4 py-3"><div className="flex flex-col"><span className={`text-[9px] font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>{tgl}</span><span className={`text-[8px] font-black ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>{jam}</span></div></td>
+
+                                                    {/* Keliatan Nama Pembelinya Lebih Tegas */}
                                                     <td className="px-4 py-3"><span className={`text-[11px] font-bold ${d ? 'text-zinc-300' : 'text-zinc-700'}`}>{sale.customerName && sale.customerName !== '-' ? sale.customerName : <span className="opacity-50 italic">Anonim</span>}</span></td>
+
                                                     <td className="px-4 py-3">
                                                         <div className="flex flex-col items-start gap-1">
                                                             {isKasbon ? (
