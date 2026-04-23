@@ -14,6 +14,7 @@ export default function AddProductPage() {
     const [price, setPrice] = useState('');
     const [isDark, setIsDark] = useState(true);
 
+    // Ambil data menu yang lagi aktif buat ditampilin di list bawah
     const activeProducts = useLiveQuery(async () => {
         return await db.products.where('isActive').equals(1).reverse().toArray();
     });
@@ -27,9 +28,9 @@ export default function AddProductPage() {
                 name: name,
                 category: category,
                 price: parseInt(price),
-                stock: 999,
+                stock: 999, // Set unlimited aja karena kedai kopi jarang hitung stok per cup di kasir
                 isActive: true,
-                variant: '' 
+                variant: '' // Kosongin, nanti kalau mau dibikin varian tinggal edit namanya misal "Cookies Coklat"
             });
 
             alert('Menu berhasil ditambah!');
