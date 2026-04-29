@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Product } from '../lib/db';
 import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText, BarChart3, BookOpen, CheckCircle, SplitSquareHorizontal, Calculator } from 'lucide-react';
@@ -23,6 +23,9 @@ export default function POSPage() {
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
+
+  const [isTutupKasirModalOpen, setIsTutupKasirModalOpen] = useState(false);
+  const [namaKasir, setNamaKasir] = useState('');
 
   const activeProducts = useLiveQuery(async () => {
     const all = await db.products.toArray();
@@ -132,10 +135,8 @@ export default function POSPage() {
     setIsCheckoutModalOpen(false);
   };
 
-  // ==========================================
-  // FUNGSI TUTUP KASIR (FIX KASBON MINUS & HASIL BERSIH)
-  // ==========================================
-  const handleTutupKasir = async () => {
+  // Tutup Kasir
+  const confirmTutupKasir = async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -149,6 +150,24 @@ export default function POSPage() {
     if (todaysSales.length === 0) {
       return alert('Belum ada transaksi hari ini, nggak bisa tutup kasir!');
     }
+
+    setIsTutupKasirModalOpen(true);
+  };
+
+  const handleTutupKasir = async () => {
+    if (!namaKasir.trim()) {
+      return alert('Nama kasir wajib diisi buat rekap tutup kasir!');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todaysSales = await db.sales
+      .where('date')
+      .between(today, tomorrow)
+      .toArray();
 
     const allProducts = await db.products.toArray();
 
@@ -180,10 +199,10 @@ export default function POSPage() {
         totalKasbon += sale.totalAmount;
       }
 
-      const itemsStr = sale.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+      const itemsStr = sale.items.map(i => `- ${i.name} (x${i.quantity})`).join('\n');
       const methodStr = isUnpaid
-        ? 'KASBON (Belum Bayar)'
-        : (sale.paymentMethod === 'SPLIT' ? `SPLIT (C:${sale.cashAmount}, Q:${sale.qrisAmount})` : sale.paymentMethod);
+        ? '[BELUM BAYAR]'
+        : (sale.paymentMethod === 'SPLIT' ? `SPLIT\n(C:${sale.cashAmount}, Q:${sale.qrisAmount})` : sale.paymentMethod);
 
       return [
         index + 1,
@@ -201,12 +220,12 @@ export default function POSPage() {
     doc.text('REKAP TUTUP KASIR JUHBAY COFFEE', 14, 20);
     doc.setFontSize(11);
     doc.text(`Tanggal: ${dateStr}`, 14, 28);
+    doc.text(`Kasir / Shift: ${namaKasir}`, 14, 34);
 
-    // Hitung hasil bersih akhir dikurangi kasbon
     const hasilBersihAkhir = totalProfitLunas - totalKasbon;
 
     autoTable(doc, {
-      startY: 35,
+      startY: 42,
       head: [['Ringkasan', 'Nominal']],
       body: [
         ['Total Transaksi (Semua)', `${todaysSales.length} Trx`],
@@ -220,14 +239,14 @@ export default function POSPage() {
       // @ts-ignore
       didParseCell: function (data: any) {
         if (data.row.index === 3 && data.column.index === 1) {
-          data.cell.styles.textColor = [239, 68, 68]; // Merah untuk Kasbon
+          data.cell.styles.textColor = [239, 68, 68];
           data.cell.styles.fontStyle = 'bold';
         }
         if (data.row.index === 4 && data.column.index === 1) {
           if (hasilBersihAkhir < 0) {
-            data.cell.styles.textColor = [239, 68, 68]; // Merah kalau minus
+            data.cell.styles.textColor = [239, 68, 68];
           } else {
-            data.cell.styles.textColor = [34, 197, 94]; // Hijau kalau plus
+            data.cell.styles.textColor = [34, 197, 94];
           }
           data.cell.styles.fontStyle = 'bold';
         }
@@ -240,12 +259,15 @@ export default function POSPage() {
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [39, 39, 42] },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        2: { cellWidth: 55 },
+      },
       // @ts-ignore
       didParseCell: function (data: any) {
-        if (data.row.raw[3] === 'KASBON (Belum Bayar)') {
+        if (data.row.raw[3] === '[BELUM BAYAR]') {
           if (data.column.index === 3 || data.column.index === 4) {
-            data.cell.styles.textColor = [239, 68, 68]; // Merah untuk row Kasbon
+            data.cell.styles.textColor = [239, 68, 68];
             data.cell.styles.fontStyle = 'bold';
           }
         }
@@ -253,7 +275,10 @@ export default function POSPage() {
     });
 
     doc.save(`Rekap_Juhbay_${today.toISOString().split('T')[0]}.pdf`);
-    alert('Tutup Kasir selesai! Data Kasbon otomatis mengurangi Hasil Bersih di PDF.');
+    alert('Tutup Kasir selesai! Laporan PDF berhasil di-download.');
+
+    setIsTutupKasirModalOpen(false);
+    setNamaKasir('');
   };
 
   const d = isDark;
@@ -261,7 +286,34 @@ export default function POSPage() {
   return (
     <div className={`flex h-screen font-sans overflow-hidden relative transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
 
-      {/* MODAL MANUAL BREW */}
+      {/* Modal Tutup Kasir */}
+      {isTutupKasirModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className={`rounded-2xl p-5 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+            <div className="flex justify-between items-center mb-5 md:mb-6">
+              <h3 className="text-sm md:text-base font-black uppercase tracking-widest text-amber-500">Tutup Kasir</h3>
+              <button onClick={() => setIsTutupKasirModalOpen(false)} className={`p-2 rounded-lg transition-colors ${d ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}><X size={18} /></button>
+            </div>
+
+            <div className="mb-5 md:mb-6 text-left">
+              <label className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest block mb-1 md:mb-2 ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>Nama Kasir yang Bertugas</label>
+              <input type="text" value={namaKasir} onChange={e => setNamaKasir(e.target.value)}
+                className={`w-full p-2.5 md:p-3 rounded-xl font-bold outline-none border text-xs md:text-sm ${d ? 'bg-zinc-800 border-zinc-700 text-white focus:border-amber-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-amber-500'}`}
+                placeholder="Cth: Yudha / Fikri"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2 md:space-y-3">
+              <button onClick={handleTutupKasir} className="w-full bg-amber-500 hover:bg-amber-400 text-black font-black py-3 md:py-4 rounded-xl transition-all active:scale-95 uppercase tracking-widest text-[10px] md:text-sm flex items-center justify-center gap-2">
+                <FileText size={16} /> Cetak & Tutup Kasir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Manual Brew */}
       {isManualModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className={`rounded-2xl p-5 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
@@ -289,7 +341,7 @@ export default function POSPage() {
         </div>
       )}
 
-      {/* MODAL CHECKOUT CONFIRMATION */}
+      {/* Modal Checkout */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className={`rounded-2xl p-5 md:p-8 w-full max-w-sm shadow-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
@@ -325,7 +377,7 @@ export default function POSPage() {
         </div>
       )}
 
-      {/* SIDEBAR NAVIGATION */}
+      {/* Sidebar */}
       <div className={`w-14 md:w-56 flex flex-col p-2 md:p-4 gap-1 border-r z-20 transition-colors duration-300 flex-shrink-0 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
         <div className="px-2 py-4 mb-2 hidden md:block">
           <p className="text-[9px] font-black text-amber-500 tracking-[0.3em] uppercase mb-1">EST. 2024</p>
@@ -354,8 +406,9 @@ export default function POSPage() {
           <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
         </Link>
 
+        {/* Tombol Tutup Kasir */}
         <div className="mt-auto mb-2">
-          <button onClick={handleTutupKasir} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-black text-xs transition-all ${d ? 'bg-zinc-800 text-amber-500 hover:bg-amber-500 hover:text-black' : 'bg-zinc-100 text-amber-600 hover:bg-amber-500 hover:text-white'}`}>
+          <button onClick={confirmTutupKasir} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-black text-xs transition-all ${d ? 'bg-zinc-800 text-amber-500 hover:bg-amber-500 hover:text-black' : 'bg-zinc-100 text-amber-600 hover:bg-amber-500 hover:text-white'}`}>
             <FileText size={17} />
             <span className="hidden md:block">Tutup Kasir</span>
           </button>
@@ -369,12 +422,14 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* MAIN AREA */}
+      {/* Main */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-w-0">
 
-        {/* MENU GRID */}
+        {/* Menu */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 min-h-0">
-          <h2 className={`text-xs font-black tracking-[0.3em] uppercase mb-4 md:mb-5 ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Order Menu</h2>
+          <div className="flex justify-between items-center mb-4 md:mb-5">
+            <h2 className={`text-xs font-black tracking-[0.3em] uppercase ${d ? 'text-zinc-600' : 'text-zinc-400'}`}>Order Menu</h2>
+          </div>
 
           {activeProducts && Object.entries(activeProducts).map(([cat, names]) => (
             <div key={cat} className="mb-5 md:mb-7">
@@ -403,7 +458,7 @@ export default function POSPage() {
           ))}
         </div>
 
-        {/* CART */}
+        {/* Cart */}
         <div className={`w-full md:w-72 lg:w-80 flex flex-col border-t md:border-t-0 md:border-l flex-shrink-0 transition-colors duration-300 h-[45vh] md:h-auto ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
 
           <div className={`p-3 md:p-5 border-b flex justify-between items-center flex-shrink-0 ${d ? 'border-zinc-800' : 'border-zinc-100'}`}>
