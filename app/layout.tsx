@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Juhbay POS",
   description: "Offline Point of Sale system",
-  manifest: "/manifest.json", // Tambahin baris ini
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

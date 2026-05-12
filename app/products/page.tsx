@@ -1,60 +1,120 @@
-// ini di product
+// app/product/page.tsx
 
 'use client';
 
-import { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../../lib/db';
-import { ArrowLeft, Plus, Trash2, PackageSearch, Coffee, Sun, Moon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { ArrowLeft, Plus, Trash2, PackageSearch, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 
+interface ProductItem {
+    id: number;
+    name: string;
+    category: string;
+    price: number;
+    variant: string;
+}
+
 export default function AddProductPage() {
+    const [isMounted, setIsMounted] = useState(false);
     const [name, setName] = useState('');
     const [category, setCategory] = useState('KOPI CLASSIC');
     const [price, setPrice] = useState('');
     const [isDark, setIsDark] = useState(true);
+    const [activeProducts, setActiveProducts] = useState<ProductItem[]>([]);
 
-    // Ambil data menu yang lagi aktif buat ditampilin di list bawah
-    const activeProducts = useLiveQuery(async () => {
-        return await db.products.where('isActive').equals(1).reverse().toArray();
-    });
+    const fetchProducts = async () => {
+        const { data } = await supabase
+            .from('products')
+            .select('id, name, category, price, variant')
+            .eq('is_active', true)
+            .order('id', { ascending: false });
+
+        if (data) {
+            setActiveProducts(data.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                category: p.category,
+                price: p.price,
+                variant: p.variant || ''
+            })));
+        }
+    };
+
+    useEffect(() => {
+        setIsMounted(true);
+        fetchProducts();
+
+        const channel = supabase
+            .channel('realtime-add-product-page')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+                fetchProducts();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     const handleAddProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !price) return alert('Nama dan Harga wajib diisi!');
 
         try {
-            await db.products.add({
-                name: name,
-                category: category,
-                price: parseInt(price),
-                stock: 999, // Set unlimited aja karena kedai kopi jarang hitung stok per cup di kasir
-                isActive: true,
-                variant: '' // Kosongin, nanti kalau mau dibikin varian tinggal edit namanya misal "Cookies Coklat"
-            });
+            const { error } = await supabase
+                .from('products')
+                .insert({
+                    name: name,
+                    category: category,
+                    price: parseInt(price),
+                    stock: 999,
+                    is_active: true,
+                    variant: null,
+                    hpp_total: 0
+                });
+
+            if (error) throw error;
 
             alert('Menu berhasil ditambah!');
             setName('');
             setPrice('');
+            fetchProducts();
         } catch (error) {
             alert('Gagal menambah menu');
-            console.error(error);
         }
     };
 
     const handleDeleteProduct = async (id: number) => {
         if (confirm('Yakin mau hapus menu ini dari kasir? (Data di history tetap aman)')) {
-            await db.products.update(id, { isActive: false });
+            try {
+                const { error } = await supabase
+                    .from('products')
+                    .update({ is_active: false })
+                    .eq('id', id);
+
+                if (error) throw error;
+                fetchProducts();
+            } catch (error) {
+                alert('Gagal menghapus menu');
+            }
         }
     };
 
     const d = isDark;
 
+    if (!isMounted) {
+        return (
+            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+                <p className="text-amber-500 font-black tracking-[0.3em] uppercase text-xs">Memuat Halaman...</p>
+            </div>
+        );
+    }
+
     return (
         <div className={`min-h-screen p-4 md:p-8 font-sans transition-colors duration-300 ${d ? 'bg-zinc-950 text-white' : 'bg-zinc-100 text-zinc-900'}`}>
             <div className="max-w-4xl mx-auto">
 
-                {/* Header */}
                 <div className="flex justify-between items-start mb-8">
                     <div>
                         <Link href="/" className={`inline-flex items-center gap-2 font-black text-xs mb-3 hover:opacity-70 transition-all tracking-widest uppercase ${d ? 'text-amber-500' : 'text-amber-700'}`}>
@@ -69,7 +129,6 @@ export default function AddProductPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
 
-                    {/* Form Tambah Menu */}
                     <div className="md:col-span-1">
                         <div className={`p-5 md:p-6 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
                             <h2 className="font-black text-base mb-5">Tambah Menu Baru</h2>
@@ -121,7 +180,6 @@ export default function AddProductPage() {
                         </div>
                     </div>
 
-                    {/* Daftar Menu Aktif */}
                     <div className="md:col-span-2">
                         <div className={`p-5 md:p-6 rounded-2xl border min-h-64 ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200 shadow-sm'}`}>
                             <h2 className="font-black text-base mb-5">Daftar Menu Aktif</h2>
@@ -145,7 +203,7 @@ export default function AddProductPage() {
                                             </div>
 
                                             <button
-                                                onClick={() => handleDeleteProduct(product.id!)}
+                                                onClick={() => handleDeleteProduct(product.id)}
                                                 className={`p-2.5 rounded-xl transition-all flex-shrink-0 ml-3 ${d ? 'text-zinc-600 hover:text-red-500 hover:bg-zinc-700' : 'text-zinc-400 hover:text-red-500 hover:bg-red-50'}`}
                                                 title="Hapus Menu"
                                             >
