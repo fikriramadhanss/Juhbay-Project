@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, CheckCircle, Trash2, X, Calculator, FileText } from 'lucide-react';
+import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, CheckCircle, Trash2, X, Calculator, FileText, Bell } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HutangPage() {
@@ -244,6 +244,7 @@ export default function HutangPage() {
                 <Link href="/hpp" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}><Calculator size={17} /> <span className="hidden md:block tracking-wide">Kelola HPP</span></Link>
                 <Link href="/hutang" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black text-xs transition-all"><BookOpen size={17} /> <span className="hidden md:block tracking-wide">Buku Hutang</span></Link>
                 <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}><BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span></Link>
+                <Link href="/orders" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}><Bell size={17} /> <span className="hidden md:block tracking-wide">Pesanan Online</span></Link>
 
                 <div className="mt-auto mb-2"><button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>{d ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span></button></div>
             </div>

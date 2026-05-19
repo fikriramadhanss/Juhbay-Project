@@ -44,7 +44,7 @@ export interface Sale {
     id?: number;
     date: string; // ISO string
     total_amount: number;
-    payment_method: 'CASH' | 'QRIS' | 'KASBON' | 'SPLIT';
+    payment_method: 'CASH' | 'QRIS' | 'KASBON' | 'SPLIT' | 'ONLINE';
     status?: 'PAID' | 'UNPAID';
     customer_name?: string;
     cash_amount?: number;
@@ -227,6 +227,65 @@ export const salesDB = {
             .order('id', { ascending: true });
         if (error) throw error;
         return (data || []).map(normalizeSale);
+    },
+};
+
+// ─── Online Orders ────────────────────────────────────────────────────────────
+
+export interface OnlineOrderItem {
+    id?: string;
+    name: string;
+    price: number;
+    quantity: number;
+}
+
+export interface OnlineOrder {
+    id?: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_address?: string;
+    delivery_method: string;
+    items: OnlineOrderItem[];
+    total: number;
+    status: 'pending' | 'confirmed' | 'delivering' | 'done' | 'cancelled';
+    notes?: string;
+    created_at?: string;
+}
+
+export const onlineOrdersDB = {
+    async toArray(): Promise<OnlineOrder[]> {
+        const { data, error } = await supabase
+            .from('online_orders')
+            .select('*')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return (data || []) as OnlineOrder[];
+    },
+
+    async add(order: Omit<OnlineOrder, 'id' | 'created_at'>): Promise<string> {
+        const { data, error } = await supabase
+            .from('online_orders')
+            .insert(order)
+            .select('id')
+            .single();
+        if (error) throw error;
+        return data.id;
+    },
+
+    async update(id: string, changes: Partial<Omit<OnlineOrder, 'id'>>): Promise<void> {
+        const { error } = await supabase
+            .from('online_orders')
+            .update(changes)
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    async updateStatus(id: string, status: OnlineOrder['status']): Promise<void> {
+        const { error } = await supabase
+            .from('online_orders')
+            .update({ status })
+            .eq('id', id);
+        if (error) throw error;
     },
 };
 

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText, BarChart3, BookOpen, CheckCircle, SplitSquareHorizontal, Calculator } from 'lucide-react';
+import { ShoppingCart, Coffee, History, Trash2, Settings, Store, Banknote, QrCode, X, Sun, Moon, FileText, BarChart3, BookOpen, CheckCircle, SplitSquareHorizontal, Calculator, Bell } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -43,6 +43,7 @@ export default function POSPage() {
   const [transactionStatus, setTransactionStatus] = useState<'SUCCESS' | 'ERROR' | null>(null);
   const [transactionStatusTitle, setTransactionStatusTitle] = useState('');
   const [transactionStatusMessage, setTransactionStatusMessage] = useState('');
+  const [pendingOrders, setPendingOrders] = useState(0);
 
   const fetchProducts = async () => {
     const { data } = await supabase
@@ -70,10 +71,19 @@ export default function POSPage() {
     setIsMounted(true);
     fetchProducts();
 
+    const fetchPendingOrders = async () => {
+      const { count } = await supabase.from('online_orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      setPendingOrders(count || 0);
+    };
+    fetchPendingOrders();
+
     const channel = supabase
       .channel('realtime-pos-channel')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
         fetchProducts();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_orders' }, () => {
+        fetchPendingOrders();
       })
       .subscribe();
 
@@ -559,6 +569,11 @@ export default function POSPage() {
         </Link>
         <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
           <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
+        </Link>
+        <Link href="/orders" className={`relative flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+          <Bell size={17} />
+          <span className="hidden md:block tracking-wide">Pesanan Online</span>
+          {pendingOrders > 0 && <span className="absolute top-1 right-1 md:static md:ml-auto bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">{pendingOrders}</span>}
         </Link>
 
         <div className="mt-auto mb-2">

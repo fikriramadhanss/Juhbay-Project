@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Store, History as HistoryIcon, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, Download, Trash2, Calculator } from 'lucide-react';
+import { Store, History as HistoryIcon, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, Download, Trash2, Calculator, Bell } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -25,6 +25,7 @@ export default function HistoryPage() {
         totalTrx: number;
         qrisCount: number;
         cashCount: number;
+        onlineCount: number;
     } | null>(null);
 
     const fetchHistory = async () => {
@@ -91,6 +92,7 @@ export default function HistoryPage() {
                 cashAmount: s.cash_amount,
                 qrisAmount: s.qris_amount,
                 totalProfit: realProfit,
+                onlineOrderId: s.online_order_id,
                 items: fixedItems
             };
         });
@@ -102,6 +104,7 @@ export default function HistoryPage() {
 
         const qrisCount = lunasSales.filter(s => s.paymentMethod === 'QRIS' || s.paymentMethod === 'SPLIT').length;
         const cashCount = lunasSales.filter(s => s.paymentMethod === 'CASH' || s.paymentMethod === 'SPLIT').length;
+        const onlineCount = lunasSales.filter(s => s.paymentMethod === 'ONLINE').length;
 
         setHistoryData({
             sales: mappedSales,
@@ -109,7 +112,8 @@ export default function HistoryPage() {
             totalProfit,
             totalTrx: lunasSales.length,
             qrisCount,
-            cashCount
+            cashCount,
+            onlineCount
         });
     };
 
@@ -150,6 +154,12 @@ export default function HistoryPage() {
                         }
                     }
                 }
+
+                // If ONLINE sale, also delete the linked online_order
+                if (sale.paymentMethod === 'ONLINE' && sale.onlineOrderId) {
+                    await supabase.from('online_orders').delete().eq('id', sale.onlineOrderId);
+                }
+
                 const { error } = await supabase.from('sales').delete().eq('id', sale.id);
                 if (error) throw error;
 
@@ -283,6 +293,9 @@ export default function HistoryPage() {
                 <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
                 </Link>
+                <Link href="/orders" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <Bell size={17} /> <span className="hidden md:block tracking-wide">Pesanan Online</span>
+                </Link>
 
                 <div className="mt-auto mb-2"><button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>{d ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span></button></div>
             </div>
@@ -329,7 +342,7 @@ export default function HistoryPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 mb-6 md:mb-8">
                         <div className={`p-4 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                             <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total Trx</p>
                             <h3 className="text-lg md:text-xl font-black">{historyData?.totalTrx || 0}</h3>
@@ -341,6 +354,10 @@ export default function HistoryPage() {
                         <div className={`p-4 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                             <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Via QRIS</p>
                             <h3 className="text-lg md:text-xl font-black text-purple-500">{historyData?.qrisCount || 0} <span className="text-[10px] font-bold text-zinc-500">trx</span></h3>
+                        </div>
+                        <div className={`p-4 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Online</p>
+                            <h3 className="text-lg md:text-xl font-black text-amber-500">{historyData?.onlineCount || 0} <span className="text-[10px] font-bold text-zinc-500">trx</span></h3>
                         </div>
                         <div className={`p-4 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                             <p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-1.5 md:mb-2 ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Omzet Kotor</p>
@@ -387,7 +404,7 @@ export default function HistoryPage() {
                                                             {isKasbon ? (
                                                                 <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border bg-red-500/10 text-red-500 border-red-500/20">BELUM BAYAR</span>
                                                             ) : (
-                                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${sale.paymentMethod === 'QRIS' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : sale.paymentMethod === 'CASH' ? 'bg-green-500/10 text-green-500 border-green-500/20' : sale.paymentMethod === 'SPLIT' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>{sale.paymentMethod}</span>
+                                                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${sale.paymentMethod === 'QRIS' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : sale.paymentMethod === 'CASH' ? 'bg-green-500/10 text-green-500 border-green-500/20' : sale.paymentMethod === 'SPLIT' ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' : sale.paymentMethod === 'ONLINE' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'}`}>{sale.paymentMethod}</span>
                                                             )}
                                                             {sale.paymentMethod === 'SPLIT' && !isKasbon && (
                                                                 <div className={`text-[7px] font-bold mt-1 leading-tight ${d ? 'text-zinc-400' : 'text-zinc-500'}`}>

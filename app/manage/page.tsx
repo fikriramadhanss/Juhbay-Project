@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { History, Settings, Store, PackagePlus, Minus, Plus, Edit, Trash2, Save, X, Coffee, Sun, Moon, Check, BarChart3, BookOpen, Calculator, FileText, CheckCircle } from 'lucide-react';
+import { History, Settings, Store, PackagePlus, Minus, Plus, Edit, Trash2, Save, X, Coffee, Sun, Moon, Check, BarChart3, BookOpen, Calculator, FileText, CheckCircle, Bell } from 'lucide-react';
 import Link from 'next/link';
 
 interface Product {
@@ -289,6 +289,9 @@ export default function ManagePage() {
                 </Link>
                 <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
+                </Link>
+                <Link href="/orders" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <Bell size={17} /> <span className="hidden md:block tracking-wide">Pesanan Online</span>
                 </Link>
 
                 <div className="mt-auto"><button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>{d ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span></button></div>

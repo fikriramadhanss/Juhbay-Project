@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, TrendingUp, Banknote, QrCode, BookOpen, Calculator, CalendarDays, Trophy, ChevronDown, Package } from 'lucide-react';
+import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, TrendingUp, Banknote, QrCode, BookOpen, Calculator, CalendarDays, Trophy, ChevronDown, Package, Bell } from 'lucide-react';
 import Link from 'next/link';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie } from 'recharts'
 
@@ -18,11 +18,13 @@ export default function DashboardPage() {
         totalRevenue: number;
         totalCash: number;
         totalQris: number;
+        totalOnline: number;
         totalProfit: number;
         totalTransactions: number;
         topProducts: any[];
         pieData: any[];
         categoryStats: any[];
+        onlineChartData: any[];
     } | null>(null);
 
     const categoryColors = ['#f59e0b', '#3b82f6', '#10b981', '#a855f7', '#ec4899', '#06b6d4', '#f97316'];
@@ -90,6 +92,7 @@ export default function DashboardPage() {
         let totalRevenue = 0;
         let totalCash = 0;
         let totalQris = 0;
+        let totalOnline = 0;
         let totalProfit = 0;
 
         const itemCounts: Record<string, { name: string, qty: number, revenue: number }> = {};
@@ -99,10 +102,11 @@ export default function DashboardPage() {
             const dateObj = new Date(sale.date);
             const dateStr = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
 
-            if (!acc[dateStr]) acc[dateStr] = { name: dateStr, Total: 0, CASH: 0, QRIS: 0, Profit: 0 };
+            if (!acc[dateStr]) acc[dateStr] = { name: dateStr, Total: 0, CASH: 0, QRIS: 0, ONLINE: 0, Profit: 0 };
 
-            const cAmt = sale.cashAmount || (sale.paymentMethod === 'CASH' ? sale.totalAmount : 0);
-            const qAmt = sale.qrisAmount || (sale.paymentMethod === 'QRIS' ? sale.totalAmount : 0);
+            const cAmt = sale.paymentMethod === 'ONLINE' ? 0 : (sale.cashAmount || (sale.paymentMethod === 'CASH' ? sale.totalAmount : 0));
+            const qAmt = sale.paymentMethod === 'ONLINE' ? 0 : (sale.qrisAmount || (sale.paymentMethod === 'QRIS' ? sale.totalAmount : 0));
+            const oAmt = sale.paymentMethod === 'ONLINE' ? sale.totalAmount : 0;
 
             let realProfit = sale.totalProfit || 0;
             if (!sale.totalProfit || sale.totalProfit === 0) {
@@ -116,11 +120,13 @@ export default function DashboardPage() {
             acc[dateStr].Total += sale.totalAmount;
             acc[dateStr].CASH += cAmt;
             acc[dateStr].QRIS += qAmt;
+            acc[dateStr].ONLINE += oAmt;
             acc[dateStr].Profit += realProfit;
 
             totalRevenue += sale.totalAmount;
             totalCash += cAmt;
             totalQris += qAmt;
+            totalOnline += oAmt;
             totalProfit += realProfit;
 
             sale.items.forEach((item: any) => {
@@ -134,24 +140,29 @@ export default function DashboardPage() {
             });
 
             return acc;
-        }, {} as Record<string, { name: string, Total: number, CASH: number, QRIS: number, Profit: number }>);
+        }, {} as Record<string, { name: string, Total: number, CASH: number, QRIS: number, ONLINE: number, Profit: number }>);
 
         const topProducts = Object.values(itemCounts).sort((a, b) => b.qty - a.qty).slice(0, 5);
         const pieData = [
             { name: 'CASH', value: totalCash, color: '#22c55e' },
-            { name: 'QRIS', value: totalQris, color: '#a855f7' }
-        ];
+            { name: 'QRIS', value: totalQris, color: '#a855f7' },
+            { name: 'ONLINE', value: totalOnline, color: '#f59e0b' }
+        ].filter(d => d.value > 0);
+
+        const onlineChartData = Object.values(groupedByDate).map(d => ({ name: d.name, Online: d.ONLINE })).filter(d => d.Online > 0);
 
         setDashboardData({
             chartData: Object.values(groupedByDate),
             totalRevenue,
             totalCash,
             totalQris,
+            totalOnline,
             totalProfit,
             totalTransactions: sales.length,
             topProducts,
             pieData,
-            categoryStats: Object.entries(categoryStats).map(([name, value]) => ({ name, value }))
+            categoryStats: Object.entries(categoryStats).map(([name, value]) => ({ name, value })),
+            onlineChartData
         });
     };
 
@@ -215,6 +226,9 @@ export default function DashboardPage() {
                 <Link href="/dashboard" className="flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl bg-amber-500 text-black font-black text-xs transition-all">
                     <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
                 </Link>
+                <Link href="/orders" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <Bell size={17} /> <span className="hidden md:block tracking-wide">Pesanan Online</span>
+                </Link>
 
                 <div className="mt-auto mb-2"><button onClick={() => setIsDark(!d)} className={`flex items-center justify-center md:justify-start gap-3 p-3 w-full rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-600 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>{d ? <Sun size={17} /> : <Moon size={17} />}<span className="hidden md:block">{d ? 'Light Mode' : 'Dark Mode'}</span></button></div>
             </div>
@@ -247,7 +261,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4 mb-6 md:mb-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4 mb-6 md:mb-8">
                         <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
                             <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Omzet</p><div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500"><TrendingUp size={14} /></div></div>
                             <h3 className="text-lg md:text-xl font-black truncate text-blue-500">Rp {dashboardData?.totalRevenue.toLocaleString('id-ID') || 0}</h3>
@@ -268,6 +282,10 @@ export default function DashboardPage() {
                             <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>QRIS</p><div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-500"><QrCode size={14} /></div></div>
                             <h3 className="text-lg md:text-xl font-black truncate text-purple-500">Rp {dashboardData?.totalQris.toLocaleString('id-ID') || 0}</h3>
                         </div>
+                        <div className={`p-4 md:p-5 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                            <div className="flex justify-between items-start mb-2"><p className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Online</p><div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500"><Package size={14} /></div></div>
+                            <h3 className="text-lg md:text-xl font-black truncate text-amber-500">Rp {dashboardData?.totalOnline.toLocaleString('id-ID') || 0}</h3>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
@@ -285,7 +303,8 @@ export default function DashboardPage() {
                                             <RechartsTooltip cursor={{ fill: d ? '#27272a' : '#f4f4f5' }} contentStyle={{ backgroundColor: d ? '#18181b' : '#ffffff', borderColor: d ? '#27272a' : '#e4e4e7', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }} labelStyle={{ color: d ? '#ffffff' : '#09090b' }} itemStyle={{ color: d ? '#ffffff' : '#09090b' }} formatter={(value: any, name: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, name]} />
                                             <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '10px', fontWeight: 900 }} iconType="circle" />
                                             <Bar dataKey="CASH" stackId="a" fill="#22c55e" radius={[0, 0, 4, 4]} />
-                                            <Bar dataKey="QRIS" stackId="a" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="QRIS" stackId="a" fill="#a855f7" radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="ONLINE" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -339,7 +358,7 @@ export default function DashboardPage() {
                                     </RechartsPie>
                                 </ResponsiveContainer>
                             </div>
-                            <div className="flex justify-center gap-6 mt-2">
+                            <div className="flex justify-center gap-4 mt-2 flex-wrap">
                                 {(dashboardData?.pieData || []).map(item => (
                                     <div key={item.name} className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
@@ -369,6 +388,32 @@ export default function DashboardPage() {
                                 </ResponsiveContainer>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Online Orders Chart */}
+                    <div className={`mt-6 p-4 md:p-6 rounded-2xl border ${d ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
+                        <div className="flex items-center justify-between mb-4 md:mb-6">
+                            <h3 className="text-xs md:text-sm font-black uppercase tracking-widest">Pesanan Online</h3>
+                            <span className={`text-[10px] font-bold ${d ? 'text-zinc-500' : 'text-zinc-400'}`}>Total: Rp {dashboardData?.totalOnline.toLocaleString('id-ID') || 0}</span>
+                        </div>
+                        {(!dashboardData?.onlineChartData || dashboardData.onlineChartData.length === 0) ? (
+                            <div className={`flex flex-col items-center justify-center py-10 ${d ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                                <Package size={32} className="mb-2" />
+                                <p className="font-black text-[10px] uppercase tracking-widest">Belum ada pesanan online</p>
+                            </div>
+                        ) : (
+                            <div className="h-[200px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={dashboardData.onlineChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={d ? '#27272a' : '#e4e4e7'} vertical={false} />
+                                        <XAxis dataKey="name" tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                                        <YAxis width={65} tickFormatter={(value: any) => `Rp ${(value / 1000)}k`} tick={{ fill: d ? '#71717a' : '#a1a1aa', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                                        <RechartsTooltip contentStyle={{ backgroundColor: d ? '#18181b' : '#ffffff', borderColor: d ? '#27272a' : '#e4e4e7', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }} formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Online']} />
+                                        <Bar dataKey="Online" fill="#f59e0b" radius={[4, 4, 4, 4]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
                     </div>
 
                 </div>

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, Calculator, Check, Trash2, PackagePlus, X, Edit, Save, ListChecks } from 'lucide-react';
+import { Store, History, Settings, Coffee, Sun, Moon, BarChart3, BookOpen, Calculator, Check, Trash2, PackagePlus, X, Edit, Save, ListChecks, Bell } from 'lucide-react';
 import Link from 'next/link';
 
 interface HppTemplate {
@@ -373,6 +373,9 @@ export default function HppPage() {
                 </Link>
                 <Link href="/dashboard" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
                     <BarChart3 size={17} /> <span className="hidden md:block tracking-wide">Dashboard</span>
+                </Link>
+                <Link href="/orders" className={`flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl font-bold text-xs transition-all ${d ? 'text-zinc-500 hover:bg-zinc-800 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900'}`}>
+                    <Bell size={17} /> <span className="hidden md:block tracking-wide">Pesanan Online</span>
                 </Link>
 
                 <div className="mt-auto mb-2">
